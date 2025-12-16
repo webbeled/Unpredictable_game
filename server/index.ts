@@ -58,6 +58,8 @@ app.post('/api/quiz/:id/guess', (req, res) => {
     const { id } = req.params;
     const { guess } = req.body;
 
+    console.log('Received guess:', guess, 'for quiz:', id);
+
     if (!guess || typeof guess !== 'string') {
       res.status(400).json({
         error: 'Invalid request',
@@ -66,9 +68,10 @@ app.post('/api/quiz/:id/guess', (req, res) => {
       return;
     }
 
-    const isCorrect = checkGuess(id, guess);
+    const result = checkGuess(id, guess);
+    console.log('Check guess result:', result);
 
-    if (isCorrect === null) {
+    if (result === null) {
       res.status(404).json({
         error: 'Quiz not found',
         message: `No quiz found with id: ${id}`
@@ -76,14 +79,16 @@ app.post('/api/quiz/:id/guess', (req, res) => {
       return;
     }
 
-    // If correct, return the solution
-    if (isCorrect) {
-      const answer = getQuizAnswer(id);
+    // If correct, return the mask and word
+    if (result !== false) {
+      console.log('Guess is correct! Returning:', { correct: true, mask: result.mask, word: result.word });
       res.json({
         correct: true,
-        solution: answer?.solution
+        mask: result.mask,
+        word: result.word
       });
     } else {
+      console.log('Guess is incorrect');
       res.json({ correct: false });
     }
   } catch (error) {
