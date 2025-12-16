@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 
 export interface QuizEntry {
   id: string
@@ -10,11 +10,19 @@ export interface QuizEntry {
 export interface QuizAnswer {
   id: string
   solution: string
+  solution_adj?: string
+  solution_closed_class?: string
+  solution_nouns?: string
+  solution_numbers?: string
+  solution_proper_nouns?: string
+  solution_verbs?: string
+  to_annotate?: string
 }
 
 export interface GuessResponse {
   correct: boolean
-  solution?: string
+  mask?: string
+  word?: string
 }
 
 export const useQuiz = () => {
@@ -40,10 +48,9 @@ export const useQuizAnswer = (id: string) => {
   })
 }
 
-export const useGuessSubmit = (id: string, guess: string) => {
-  return useQuery<GuessResponse>({
-    queryKey: ['quiz', id, 'guess', guess],
-    queryFn: async () => {
+export const useGuessSubmit = (id: string) => {
+  return useMutation<GuessResponse, Error, string>({
+    mutationFn: async (guess: string) => {
       const response = await fetch(`/api/quiz/${id}/guess`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,6 +59,5 @@ export const useGuessSubmit = (id: string, guess: string) => {
       if (!response.ok) throw new Error('Failed to submit guess')
       return response.json()
     },
-    enabled: false, // Don't fetch automatically
   })
 }

@@ -12,11 +12,19 @@ export interface QuizEntry {
   fileName: string;
   sheetName: string;
   annotate: string;
+  to_annotate?: string;
 }
 
 export interface QuizAnswer {
   id: string;
   solution: string;
+  solution_adj?: string;
+  solution_closed_class?: string;
+  solution_nouns?: string;
+  solution_numbers?: string;
+  solution_proper_nouns?: string;
+  solution_verbs?: string;
+  to_annotate?: string;
 }
 
 interface FullEntry {
@@ -94,6 +102,7 @@ export function getRandomQuiz(): QuizEntry {
     fileName: randomEntry.fileName,
     sheetName: randomEntry.sheetName,
     annotate: randomEntry.annotate,
+    to_annotate: randomEntry.rowData.to_annotate,
   };
 }
 
@@ -108,18 +117,28 @@ export function getQuizAnswer(id: string): QuizAnswer | null {
     return null;
   }
 
-  const solution = entry.rowData.solution || entry.rowData.Solution || entry.rowData.SOLUTION || '';
+  // Try to get the main solution field (for backward compatibility)
+  const solution = entry.rowData.solution || entry.rowData.Solution || entry.rowData.SOLUTION ||
+                   entry.rowData.to_annotate || '';
 
   return {
     id,
     solution,
+    solution_adj: entry.rowData.solution_adj,
+    solution_closed_class: entry.rowData.solution_closed_class,
+    solution_nouns: entry.rowData.solution_nouns,
+    solution_numbers: entry.rowData.solution_numbers,
+    solution_proper_nouns: entry.rowData.solution_proper_nouns,
+    solution_verbs: entry.rowData.solution_verbs,
+    to_annotate: entry.rowData.to_annotate,
   };
 }
 
 /**
  * Check if a guess is correct for a quiz
+ * Returns the mask number and solution word if correct, null if quiz not found, false if incorrect
  */
-export function checkGuess(id: string, guess: string): boolean | null {
+export function checkGuess(id: string, guess: string): { mask: string; word: string } | false | null {
   loadData(); // Ensure data is loaded
 
   const entry = entryMap.get(id);
@@ -127,6 +146,30 @@ export function checkGuess(id: string, guess: string): boolean | null {
     return null;
   }
 
-  const solution = entry.rowData.solution || entry.rowData.Solution || entry.rowData.SOLUTION || '';
-  return guess.toLowerCase().trim() === solution.toLowerCase().trim();
+  const normalizedGuess = guess.toLowerCase().trim();
+
+  // Map solution fields to their mask numbers
+  const solutionMap = [
+    { mask: '1111', field: entry.rowData.solution_adj },
+    { mask: '2222', field: entry.rowData.solution_closed_class },
+    { mask: '3333', field: entry.rowData.solution_nouns },
+    { mask: '4444', field: entry.rowData.solution_numbers },
+    { mask: '5555', field: entry.rowData.solution_proper_nouns },
+    { mask: '6666', field: entry.rowData.solution_verbs },
+  ];
+
+  console.log('Checking guess:', normalizedGuess);
+  console.log('Available solutions:', solutionMap.map(s => ({ mask: s.mask, field: s.field })));
+
+  for (const { mask, field } of solutionMap) {
+    if (field) {
+      const normalizedSolution = String(field).toLowerCase().trim();
+      if (normalizedGuess === normalizedSolution) {
+        console.log('Match found! Mask:', mask, 'Word:', field);
+        return { mask, word: String(field) };
+      }
+    }
+  }
+
+  return false;
 }
