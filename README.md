@@ -13,7 +13,7 @@ Owen Kearey, the owner of this app.
 
 ## Development
 
-This application consists of two parts: a React frontend and an Express backend API.
+This application consists of two parts: a Masking frontend and an Express backend API.
 
 ### Setup
 
