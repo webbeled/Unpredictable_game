@@ -1,9 +1,6 @@
 # Redactle v2
 
-This app is a redesign of [Redactle-unlimited](https://github.com/kthun/redactle-unlimited) for a neuro-science experiment.
-
-The scaffolding is done by `rfuwa14`, but the ownership will be moved to Owen Keary as 
-he leads the experiment in his lab.
+This app is a redesign of [Redactle-unlimited](https://github.com/kthun/redactle-unlimited) 
 
 
 ## DISCLAIMER
@@ -11,8 +8,8 @@ he leads the experiment in his lab.
 This app is experimental and do not consider security as a first citizen (at least yet).
 The data collected and handled within this app should not be sensitive information. More specifically,
 even though we do not intend to publish the information collected from users, the data might be used for
-academic research conducted by Owen Keary. For how we collect and manage user information, please contact
-Owen Keary, the owner of this app.
+academic research conducted by Owen Kearey. For how we collect and manage user information, please contact
+Owen Kearey, the owner of this app.
 
 ## Development
 
