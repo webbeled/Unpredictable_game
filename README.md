@@ -1,4 +1,4 @@
-# Redactle v2
+# Unpredictable 
 
 This app is a redesign of [Redactle-unlimited](https://github.com/kthun/redactle-unlimited) 
 
