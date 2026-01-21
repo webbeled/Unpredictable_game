@@ -5,10 +5,10 @@ This app is a redesign of [Redactle-unlimited](https://github.com/kthun/redactle
 
 ## DISCLAIMER
 
-This app is experimental and do not consider security as a first citizen (at least yet).
+This app is experimental and should not be considered security as a first citizen (at least yet).
 The data collected and handled within this app should not be sensitive information. More specifically,
 even though we do not intend to publish the information collected from users, the data might be used for
-academic research conducted by Owen Kearey. For how we collect and manage user information, please contact
+academic research. For how we collect and manage user information, please contact
 Owen Kearey, the owner of this app.
 
 ## Development
