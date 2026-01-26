@@ -24,6 +24,7 @@ export default function Game() {
   const [guesses, setGuesses] = useState<Set<string>>(new Set())
   const [guessError, setGuessError] = useState<string | null>(null)
   const [revealedMasks, setRevealedMasks] = useState<Map<string, string>>(new Map()) // mask -> word mapping
+  const [score, setScore] = useState(0)
 
   const [timeRemaining, setTimeRemaining] = useState(config.timerDuration)
   const [isRevealed, setIsRevealed] = useState(false)
@@ -65,6 +66,7 @@ export default function Game() {
     setIsRevealed(false)
     setSuccessMessage(null)
     setAnswerData(null)
+    setScore(0)
   }
 
   useEffect(() => {
@@ -116,6 +118,9 @@ export default function Game() {
       setGuessError(null)
 
       if (result.correct && result.mask && result.word) {
+        // Award 100 points for correct guess
+        setScore((prev) => prev + 100)
+
         // Add the revealed mask
         const newRevealedMasks = new Map(revealedMasks)
         newRevealedMasks.set(result.mask, result.word)
@@ -155,11 +160,27 @@ export default function Game() {
     // Split by the mask numbers while keeping them in the result
     const parts = text.split(/(1111|2222|3333|4444|5555|6666)/g)
 
+    // Track how many of each mask type we've seen for multi-word solutions
+    const maskCounts: Record<string, number> = {}
+
     return parts.map((part, index) => {
       // Check if this part is a mask number
       if (part in MASK_COLORS) {
         const maskColor = MASK_COLORS[part as keyof typeof MASK_COLORS]
-        const revealedWord = revealedMasks.get(part)
+        
+        // Track occurrence of this mask
+        if (!maskCounts[part]) {
+          maskCounts[part] = 0
+        }
+        const occurrenceIndex = maskCounts[part]
+        maskCounts[part]++
+
+        const revealedSolution = revealedMasks.get(part)
+        // Split multi-word solutions and get the word at this occurrence
+        const revealedWord = revealedSolution 
+          ? revealedSolution.split(/\s+/)[occurrenceIndex] 
+          : undefined
+        
         // If game is won (successMessage exists), show green background
         const backgroundColor = successMessage && revealedWord ? '#4caf50' : maskColor
 
@@ -192,7 +213,10 @@ export default function Game() {
         <Toolbar>
           <ArticleIcon sx={{ mr: 2 }} />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Redactle-v2
+           Unpredictable
+          </Typography>
+          <Typography variant="h6" component="div" sx={{ mr: 3, fontWeight: 'bold' }}>
+            Score: {score}
           </Typography>
           <IconButton color="inherit" onClick={() => navigate('/settings')}>
             <SettingsIcon />
@@ -326,10 +350,6 @@ export default function Game() {
                   </Stack>
                 </Box>
               )}
-
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 3, display: 'block' }}>
-                Source: {randomEntry.fileName} - {randomEntry.sheetName}
-              </Typography>
             </Box>
           )}
         </Box>
