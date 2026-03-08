@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Container, Box, Typography, Button, AppBar, Toolbar, Alert, CircularProgress, TextField, Chip, Stack, IconButton, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material'
 import ArticleIcon from '@mui/icons-material/Article'
@@ -52,6 +52,49 @@ export default function Game() {
   const { refetch: fetchAnswer } = useQuizAnswer(randomEntry?.id || '')
   const { mutateAsync: submitGuess } = useGuessSubmit(randomEntry?.id || '')
 
+  const quizStartedAt = useRef<number>(0)
+  const sessionSaved = useRef(false)
+
+  // Record start time whenever a new quiz loads
+  useEffect(() => {
+    if (randomEntry?.id) {
+      quizStartedAt.current = Date.now()
+      sessionSaved.current = false
+    }
+  }, [randomEntry?.id])
+
+  // Mutable ref so the effect below never goes stale but also never re-fires
+  // just because guesses/score changed — only fires when isRevealed flips.
+  const saveQuizSessionRef = useRef<(endedAt: number) => void>(() => {})
+  saveQuizSessionRef.current = (endedAt: number) => {
+    if (sessionSaved.current || !randomEntry?.id) return
+    sessionSaved.current = true
+
+    const guessedWords = Array.from(guesses.entries()).flatMap(([partOfSpeech, words]) =>
+      Array.from(words).map((word) => ({ word, part_of_speech: partOfSpeech }))
+    )
+
+    fetch('/api/quiz-sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        quiz_id: randomEntry.id,
+        score,
+        guessed_words: guessedWords,
+        ended_at: endedAt,
+        created_at: quizStartedAt.current,
+      }),
+    }).catch((err) => console.error('Failed to save quiz session:', err))
+  }
+
+  // Save session whenever the quiz ends (time up or all words guessed)
+  useEffect(() => {
+    if (isRevealed) {
+      saveQuizSessionRef.current(Date.now())
+    }
+  }, [isRevealed])
+
   // Fetch answer and reveal all masks when time runs out
   useEffect(() => {
     if (isRevealed && randomEntry?.id && !answerData && timeRemaining === 0) {
@@ -75,6 +118,7 @@ export default function Game() {
   }, [isRevealed, randomEntry?.id, answerData, timeRemaining, fetchAnswer])
 
   const handleNewGame = () => {
+    saveQuizSessionRef.current(Date.now())
     refetch()
     setGuesses(new Map())
     setGuess('')
@@ -312,38 +356,6 @@ export default function Game() {
                   Time's up! Move to the next quiz.
                 </Alert>
               )}
-
-              <Box sx={{ mb: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold', mb: 1 }}>
-                  Parts of Speech Legend:
-                </Typography>
-                <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 20, height: 20, backgroundColor: MASK_COLORS['1111'], borderRadius: 0.5 }} />
-                    <Typography variant="body2">Adjectives</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 20, height: 20, backgroundColor: MASK_COLORS['2222'], borderRadius: 0.5 }} />
-                    <Typography variant="body2">Closed Class</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 20, height: 20, backgroundColor: MASK_COLORS['3333'], borderRadius: 0.5 }} />
-                    <Typography variant="body2">Nouns</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 20, height: 20, backgroundColor: MASK_COLORS['4444'], borderRadius: 0.5 }} />
-                    <Typography variant="body2">Numbers</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 20, height: 20, backgroundColor: MASK_COLORS['5555'], borderRadius: 0.5 }} />
-                    <Typography variant="body2">Proper Nouns</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 20, height: 20, backgroundColor: MASK_COLORS['6666'], borderRadius: 0.5 }} />
-                    <Typography variant="body2">Verbs</Typography>
-                  </Box>
-                </Stack>
-              </Box>
 
               <Typography
                 variant="h4"

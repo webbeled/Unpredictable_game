@@ -44,7 +44,10 @@ let entryMap: Map<string, FullEntry> = new Map();
  */
 function generateId(fileName: string, sheetName: string, rowIndex: number): string {
   const data = `${fileName}:${sheetName}:${rowIndex}`;
-  return crypto.createHash('sha256').update(data).digest('hex').substring(0, 16);
+  const h = crypto.createHash('sha256').update(data).digest('hex');
+  // Format as a deterministic UUID v4 (version bits = 4, variant bits = 8/9/a/b)
+  const variant = ['8', '9', 'a', 'b'][parseInt(h[16], 16) & 3];
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${variant}${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
 /**

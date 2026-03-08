@@ -4,6 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { getRandomQuiz, getQuizAnswer, checkGuess } from './data.js';
 import authRouter from './auth.js';
+import quizSessionsRouter from './quizSessions.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use('/api/auth', authRouter);
+app.use('/api/quiz-sessions', quizSessionsRouter);
 
 // API endpoint to get a random quiz
 app.get('/api/quiz/', (req, res) => {

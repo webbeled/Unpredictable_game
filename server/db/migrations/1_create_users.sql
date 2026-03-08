@@ -6,5 +6,8 @@ CREATE TABLE users (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE INDEX users_email_idx ON users USING btree (email);
+
 -- Down Migration
+DROP INDEX users_email_idx;
 DROP TABLE users;

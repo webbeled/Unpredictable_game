@@ -32,6 +32,7 @@ function App() {
           <ConfigProvider>
             <Router>
               <Routes>
+                <Route path="/" element={<Home />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/quiz" element={<ProtectedRoute><Game /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
