@@ -1,12 +1,8 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Container, Box, Typography, Button, AppBar, Toolbar, Alert, CircularProgress, TextField, Chip, Stack, IconButton } from '@mui/material'
-import ArticleIcon from '@mui/icons-material/Article'
-import SettingsIcon from '@mui/icons-material/Settings'
-import LogoutIcon from '@mui/icons-material/Logout'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { Container, Box, Typography, Button, Alert, CircularProgress, TextField, Chip, Stack, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material'
 import { useConfig } from '../contexts/ConfigContext'
-import { useAuth } from '../contexts/AuthContext'
 import { useQuiz, useQuizAnswer, useGuessSubmit } from '../hooks/useQuiz'
+import NavBar from '../components/NavBar'
 
 // Color mapping for each word category
 const MASK_COLORS = {
@@ -18,25 +14,80 @@ const MASK_COLORS = {
   '6666': '#FFA07A', // Verbs - light salmon
 }
 
+const MASK_LABELS: Record<string, string> = {
+  '1111': 'Adjectives',
+  '2222': 'Closed Class',
+  '3333': 'Nouns',
+  '4444': 'Numbers',
+  '5555': 'Proper Nouns',
+  '6666': 'Verbs',
+}
+
 export default function Game() {
-  const navigate = useNavigate()
-  const { logout } = useAuth()
   const { config } = useConfig()
 
   const [guess, setGuess] = useState('')
-  const [guesses, setGuesses] = useState<Set<string>>(new Set())
+  const [guesses, setGuesses] = useState<Map<string, Set<string>>>(new Map())
   const [guessError, setGuessError] = useState<string | null>(null)
   const [revealedMasks, setRevealedMasks] = useState<Map<string, string>>(new Map()) // mask -> word mapping
   const [score, setScore] = useState(0)
-
+  const [selectedMask, setSelectedMask] = useState<string | null>(null)
   const [timeRemaining, setTimeRemaining] = useState(config.timerDuration)
   const [isRevealed, setIsRevealed] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [answerData, setAnswerData] = useState<any>(null)
 
   const { data: randomEntry, isLoading, error, refetch } = useQuiz()
+
+  const presentMasks = useMemo(() => {
+    if (!randomEntry?.annotate) return new Set<string>()
+    return new Set(randomEntry.annotate.match(/1111|2222|3333|4444|5555|6666/g) ?? [])
+  }, [randomEntry?.annotate])
   const { refetch: fetchAnswer } = useQuizAnswer(randomEntry?.id || '')
   const { mutateAsync: submitGuess } = useGuessSubmit(randomEntry?.id || '')
+
+  const quizStartedAt = useRef<number>(0)
+  const sessionSaved = useRef(false)
+
+  // Record start time whenever a new quiz loads
+  useEffect(() => {
+    if (randomEntry?.id) {
+      quizStartedAt.current = Date.now()
+      sessionSaved.current = false
+    }
+  }, [randomEntry?.id])
+
+  // Mutable ref so the effect below never goes stale but also never re-fires
+  // just because guesses/score changed — only fires when isRevealed flips.
+  const saveQuizSessionRef = useRef<(endedAt: number) => void>(() => {})
+  saveQuizSessionRef.current = (endedAt: number) => {
+    if (sessionSaved.current || !randomEntry?.id) return
+    sessionSaved.current = true
+
+    const guessedWords = Array.from(guesses.entries()).flatMap(([partOfSpeech, words]) =>
+      Array.from(words).map((word) => ({ word, part_of_speech: partOfSpeech }))
+    )
+
+    fetch('/api/quiz-sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        quiz_id: randomEntry.id,
+        score,
+        guessed_words: guessedWords,
+        ended_at: endedAt,
+        created_at: quizStartedAt.current,
+      }),
+    }).catch((err) => console.error('Failed to save quiz session:', err))
+  }
+
+  // Save session whenever the quiz ends (time up or all words guessed)
+  useEffect(() => {
+    if (isRevealed) {
+      saveQuizSessionRef.current(Date.now())
+    }
+  }, [isRevealed])
 
   // Fetch answer and reveal all masks when time runs out
   useEffect(() => {
@@ -61,8 +112,9 @@ export default function Game() {
   }, [isRevealed, randomEntry?.id, answerData, timeRemaining, fetchAnswer])
 
   const handleNewGame = () => {
+    saveQuizSessionRef.current(Date.now())
     refetch()
-    setGuesses(new Set())
+    setGuesses(new Map())
     setGuess('')
     setRevealedMasks(new Map())
     setTimeRemaining(config.timerDuration)
@@ -70,6 +122,7 @@ export default function Game() {
     setSuccessMessage(null)
     setAnswerData(null)
     setScore(0)
+    setSelectedMask(null)
   }
 
   useEffect(() => {
@@ -108,15 +161,23 @@ export default function Game() {
       return
     }
 
-    if (guesses.has(trimmedGuess)) {
-      setGuessError(`You already guessed "${trimmedGuess}"`)
+    if (!selectedMask) {
+      setGuessError('Select a part of speech first')
+      return
+    }
+
+    if (guesses.get(selectedMask)?.has(trimmedGuess)) {
+      setGuessError(`You already guessed "${trimmedGuess}" for ${MASK_LABELS[selectedMask]}`)
       return
     }
 
     try {
       const result = await submitGuess(trimmedGuess)
 
-      setGuesses(new Set([...guesses, trimmedGuess]))
+      const newGuesses = new Map(guesses)
+      if (!newGuesses.has(selectedMask)) newGuesses.set(selectedMask, new Set())
+      newGuesses.get(selectedMask)!.add(trimmedGuess)
+      setGuesses(newGuesses)
       setGuess('')
       setGuessError(null)
 
@@ -180,17 +241,20 @@ export default function Game() {
 
         const revealedSolution = revealedMasks.get(part)
         // Split multi-word solutions and get the word at this occurrence
-        const revealedWord = revealedSolution 
-          ? revealedSolution.split(/\s+/)[occurrenceIndex] 
+        const revealedWord = revealedSolution
+          ? revealedSolution.split(/\s+/)[occurrenceIndex]
           : undefined
-        
+
         // If game is won (successMessage exists), show green background
         const backgroundColor = successMessage && revealedWord ? '#4caf50' : maskColor
+        const isBoxRevealed = !!revealedWord
+        const isBoxSelected = selectedMask === part
 
         return (
           <Box
             key={index}
             component="span"
+            onClick={isBoxRevealed ? undefined : () => setSelectedMask(part)}
             sx={{
               backgroundColor,
               color: revealedWord ? 'white' : backgroundColor,
@@ -200,6 +264,9 @@ export default function Game() {
               mx: 0.25,
               display: 'inline-block',
               minWidth: '40px',
+              cursor: isBoxRevealed ? 'default' : 'pointer',
+              outline: isBoxSelected && !isBoxRevealed ? '2px solid #333' : 'none',
+              outlineOffset: '2px',
             }}
           >
             {revealedWord || '___'}
@@ -212,23 +279,7 @@ export default function Game() {
 
   return (
     <>
-      <AppBar position="static">
-        <Toolbar>
-          <ArticleIcon sx={{ mr: 2 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-           Unpredictable
-          </Typography>
-          <Typography variant="h6" component="div" sx={{ mr: 3, fontWeight: 'bold' }}>
-            Score: {score}
-          </Typography>
-          <IconButton color="inherit" onClick={() => navigate('/settings')}>
-            <SettingsIcon />
-          </IconButton>
-          <IconButton color="inherit" onClick={() => logout().then(() => navigate('/auth'))}>
-            <LogoutIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+      <NavBar score={score} />
       <Container maxWidth="lg">
         <Box sx={{ my: 4, textAlign: 'left' }}>
           {isLoading && (
@@ -284,38 +335,6 @@ export default function Game() {
                 </Alert>
               )}
 
-              <Box sx={{ mb: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold', mb: 1 }}>
-                  Parts of Speech Legend:
-                </Typography>
-                <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 20, height: 20, backgroundColor: MASK_COLORS['1111'], borderRadius: 0.5 }} />
-                    <Typography variant="body2">Adjectives</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 20, height: 20, backgroundColor: MASK_COLORS['2222'], borderRadius: 0.5 }} />
-                    <Typography variant="body2">Closed Class</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 20, height: 20, backgroundColor: MASK_COLORS['3333'], borderRadius: 0.5 }} />
-                    <Typography variant="body2">Nouns</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 20, height: 20, backgroundColor: MASK_COLORS['4444'], borderRadius: 0.5 }} />
-                    <Typography variant="body2">Numbers</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 20, height: 20, backgroundColor: MASK_COLORS['5555'], borderRadius: 0.5 }} />
-                    <Typography variant="body2">Proper Nouns</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 20, height: 20, backgroundColor: MASK_COLORS['6666'], borderRadius: 0.5 }} />
-                    <Typography variant="body2">Verbs</Typography>
-                  </Box>
-                </Stack>
-              </Box>
-
               <Typography
                 variant="h4"
                 component="h2"
@@ -326,6 +345,33 @@ export default function Game() {
               </Typography>
 
               <Box component="form" onSubmit={handleGuessSubmit} sx={{ mt: 4 }}>
+                <FormControl component="fieldset" sx={{ mb: 2, display: 'block' }}>
+                  <FormLabel component="legend" sx={{ fontSize: '0.875rem', mb: 0.5 }}>
+                    Guessing for:
+                  </FormLabel>
+                  <RadioGroup
+                    row
+                    value={selectedMask ?? ''}
+                    onChange={(e) => setSelectedMask(e.target.value)}
+                  >
+                    {Object.keys(MASK_LABELS)
+                      .filter((code) => presentMasks.has(code))
+                      .map((code) => (
+                        <FormControlLabel
+                          key={code}
+                          value={code}
+                          disabled={revealedMasks.has(code) || isRevealed}
+                          control={
+                            <Radio
+                              size="small"
+                              sx={{ color: MASK_COLORS[code as keyof typeof MASK_COLORS], '&.Mui-checked': { color: MASK_COLORS[code as keyof typeof MASK_COLORS] } }}
+                            />
+                          }
+                          label={MASK_LABELS[code]}
+                        />
+                      ))}
+                  </RadioGroup>
+                </FormControl>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <TextField
                     fullWidth
@@ -347,12 +393,22 @@ export default function Game() {
               {guesses.size > 0 && (
                 <Box sx={{ mt: 3 }}>
                   <Typography variant="h6" gutterBottom>
-                    Your guesses ({guesses.size}):
+                    Your guesses ({Array.from(guesses.values()).reduce((n, s) => n + s.size, 0)}):
                   </Typography>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {Array.from(guesses).map((word) => (
-                      <Chip key={word} label={word} size="medium" />
-                    ))}
+                  <Stack spacing={1}>
+                    {Object.keys(MASK_LABELS)
+                      .filter((code) => guesses.get(code)?.size)
+                      .map((code) => (
+                        <Box key={code} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                          <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: MASK_COLORS[code as keyof typeof MASK_COLORS], flexShrink: 0 }} />
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', mr: 0.5 }}>
+                            {MASK_LABELS[code]}:
+                          </Typography>
+                          {Array.from(guesses.get(code)!).map((word) => (
+                            <Chip key={word} label={word} size="small" />
+                          ))}
+                        </Box>
+                      ))}
                   </Stack>
                 </Box>
               )}

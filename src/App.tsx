@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Game from './pages/Game'
 import Settings from './pages/Settings'
 import Auth from './pages/Auth'
+import Home from './pages/Home'
 
 const queryClient = new QueryClient()
 
@@ -32,6 +33,7 @@ function App() {
           <ConfigProvider>
             <Router>
               <Routes>
+                <Route path="/" element={<Home />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/quiz" element={<ProtectedRoute><Game /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
