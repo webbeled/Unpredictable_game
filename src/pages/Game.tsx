@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { Container, Box, Typography, Button, AppBar, Toolbar, Alert, CircularProgress, TextField, Chip, Stack, IconButton } from '@mui/material'
 import ArticleIcon from '@mui/icons-material/Article'
 import SettingsIcon from '@mui/icons-material/Settings'
+import LogoutIcon from '@mui/icons-material/Logout'
 import { useConfig } from '../contexts/ConfigContext'
+import { useAuth } from '../contexts/AuthContext'
 import { useQuiz, useQuizAnswer, useGuessSubmit } from '../hooks/useQuiz'
 
 // Color mapping for each word category
@@ -18,6 +20,7 @@ const MASK_COLORS = {
 
 export default function Game() {
   const navigate = useNavigate()
+  const { logout } = useAuth()
   const { config } = useConfig()
 
   const [guess, setGuess] = useState('')
@@ -220,6 +223,9 @@ export default function Game() {
           </Typography>
           <IconButton color="inherit" onClick={() => navigate('/settings')}>
             <SettingsIcon />
+          </IconButton>
+          <IconButton color="inherit" onClick={() => logout().then(() => navigate('/auth'))}>
+            <LogoutIcon />
           </IconButton>
         </Toolbar>
       </AppBar>
