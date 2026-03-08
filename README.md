@@ -1,4 +1,4 @@
-# Unpredictable 
+# NewsGap
 
 This app is a redesign of [Redactle-unlimited](https://github.com/kthun/redactle-unlimited) 
 

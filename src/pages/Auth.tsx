@@ -44,7 +44,7 @@ export default function Auth() {
     <Container maxWidth="xs">
       <Box mt={8} display="flex" flexDirection="column" alignItems="center" gap={2}>
         <Typography variant="h5" fontWeight="bold">
-          Unpredictable
+          NewsGap
         </Typography>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', width: '100%' }}>
           <Tabs value={tab} onChange={(_, v) => { setTab(v); setError('') }} variant="fullWidth">

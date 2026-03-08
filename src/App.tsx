@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Game from './pages/Game'
 import Settings from './pages/Settings'
 import Auth from './pages/Auth'
+import Home from './pages/Home'
 
 const queryClient = new QueryClient()
 

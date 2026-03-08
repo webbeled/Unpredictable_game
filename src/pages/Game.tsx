@@ -1,12 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Container, Box, Typography, Button, AppBar, Toolbar, Alert, CircularProgress, TextField, Chip, Stack, IconButton, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material'
-import ArticleIcon from '@mui/icons-material/Article'
-import SettingsIcon from '@mui/icons-material/Settings'
-import LogoutIcon from '@mui/icons-material/Logout'
+import { Container, Box, Typography, Button, Alert, CircularProgress, TextField, Chip, Stack, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material'
 import { useConfig } from '../contexts/ConfigContext'
-import { useAuth } from '../contexts/AuthContext'
 import { useQuiz, useQuizAnswer, useGuessSubmit } from '../hooks/useQuiz'
+import NavBar from '../components/NavBar'
 
 // Color mapping for each word category
 const MASK_COLORS = {
@@ -28,8 +24,6 @@ const MASK_LABELS: Record<string, string> = {
 }
 
 export default function Game() {
-  const navigate = useNavigate()
-  const { logout } = useAuth()
   const { config } = useConfig()
 
   const [guess, setGuess] = useState('')
@@ -285,23 +279,7 @@ export default function Game() {
 
   return (
     <>
-      <AppBar position="static">
-        <Toolbar>
-          <ArticleIcon sx={{ mr: 2 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-           Unpredictable
-          </Typography>
-          <Typography variant="h6" component="div" sx={{ mr: 3, fontWeight: 'bold' }}>
-            Score: {score}
-          </Typography>
-          <IconButton color="inherit" onClick={() => navigate('/settings')}>
-            <SettingsIcon />
-          </IconButton>
-          <IconButton color="inherit" onClick={() => logout().then(() => navigate('/auth'))}>
-            <LogoutIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+      <NavBar score={score} />
       <Container maxWidth="lg">
         <Box sx={{ my: 4, textAlign: 'left' }}>
           {isLoading && (
