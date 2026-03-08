@@ -3,8 +3,11 @@ import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { CssBaseline } from '@mui/material'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ConfigProvider } from './contexts/ConfigContext'
+import { AuthProvider } from './contexts/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
 import Game from './pages/Game'
 import Settings from './pages/Settings'
+import Auth from './pages/Auth'
 
 const queryClient = new QueryClient()
 
@@ -25,14 +28,17 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <ConfigProvider>
-          <Router>
-            <Routes>
-              <Route path="/quiz" element={<Game />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </Router>
-        </ConfigProvider>
+        <AuthProvider>
+          <ConfigProvider>
+            <Router>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/quiz" element={<ProtectedRoute><Game /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              </Routes>
+            </Router>
+          </ConfigProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   )

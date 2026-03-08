@@ -1,12 +1,18 @@
+import 'dotenv/config'
 import express from 'express';
 import cors from 'cors';
-import { getRandomQuiz, getQuizAnswer, checkGuess } from './data';
+import cookieParser from 'cookie-parser';
+import { getRandomQuiz, getQuizAnswer, checkGuess } from './data.js';
+import authRouter from './auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
+
+app.use('/api/auth', authRouter);
 
 // API endpoint to get a random quiz
 app.get('/api/quiz/', (req, res) => {
@@ -23,12 +29,7 @@ app.get('/api/quiz/', (req, res) => {
 });
 
 // API endpoint to get quiz answer by ID
-// 
-// TODO(rfuwa): Track user session. The user identity depends on the requirements.
-// If the app wants to track the user quiz scores over multiple games, then we might as well have
-// auth in place. On the other hand, if it is only per game, then a name input at the beginning of a game suffices.
-//
-// This api is supposed to be hit only when the user fails the quiz (give up or time is up). 
+// This api is supposed to be hit only when the user fails the quiz (give up or time is up).
 app.get('/api/quiz/:id/answer', (req, res) => {
   try {
     const { id } = req.params;

@@ -13,11 +13,14 @@ import {
   Alert,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import LogoutIcon from '@mui/icons-material/Logout'
 import { useConfig } from '../contexts/ConfigContext'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Settings() {
   const navigate = useNavigate()
   const { config, updateConfig, resetConfig } = useConfig()
+  const { logout } = useAuth()
   const [timerDuration, setTimerDuration] = useState(config.timerDuration)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
@@ -57,6 +60,9 @@ export default function Settings() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Settings
           </Typography>
+          <IconButton color="inherit" onClick={() => logout().then(() => navigate('/auth'))}>
+            <LogoutIcon />
+          </IconButton>
         </Toolbar>
       </AppBar>
 
