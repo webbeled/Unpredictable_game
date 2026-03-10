@@ -200,7 +200,7 @@ export default function Home() {
         NewsGap
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
-        Guess the hidden Wikipedia article word by word.
+        Guess the hidden words in the news article!
       </Typography>
       <Button
         variant="contained"
