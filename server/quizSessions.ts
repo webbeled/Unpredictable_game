@@ -62,10 +62,10 @@ router.post('/', async (req: Request, res: Response) => {
     const result = await pool.query(
       `INSERT INTO quiz_sessions (quiz_id, user_id, score, guessed_words, ended_at, created_at)
        VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id`,
+       RETURNING quiz_id`,
       [quiz_id, userId, score, JSON.stringify(guessed_words ?? []), ended_at ?? null, created_at]
     )
-    res.status(201).json({ id: result.rows[0].id })
+    res.status(201).json({ id: result.rows[0].quiz_id })
   } catch (err) {
     console.error('Error saving quiz session:', err)
     res.status(500).json({ error: 'Internal server error' })

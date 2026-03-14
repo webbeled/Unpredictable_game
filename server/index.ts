@@ -2,12 +2,16 @@ import 'dotenv/config'
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { getRandomQuiz, getQuizAnswer, checkGuess } from './data.js';
+import jwt from 'jsonwebtoken';
+import { getRandomQuiz, getQuizAnswer, checkGuess, getRandomUnseenQuiz } from './data.js';
+import { pool } from './db/index.js';
 import authRouter from './auth.js';
 import quizSessionsRouter from './quizSessions.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
 
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
@@ -25,6 +29,55 @@ app.get('/api/quiz/', (req, res) => {
     console.error('Error getting random quiz:', error);
     res.status(500).json({
       error: 'Failed to get random quiz',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// API endpoint to get a random unseen quiz (respects user's seen articles)
+app.get('/api/quiz/new/', async (req, res) => {
+  try {
+    const token = req.cookies?.token;
+    if (!token) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    let userId: number;
+    try {
+      const payload = jwt.verify(token, JWT_SECRET) as { userId: number; email: string };
+      userId = payload.userId;
+    } catch {
+      res.status(401).json({ error: 'Invalid or expired token' });
+      return;
+    }
+
+    // Get all articles the user has seen
+    const result = await pool.query(
+      'SELECT article_id FROM seen_articles WHERE user_id = $1',
+      [userId]
+    );
+    const seenIds = new Set(result.rows.map(row => row.article_id));
+
+    // Get a random unseen quiz
+    const quiz = getRandomUnseenQuiz(seenIds);
+    
+    if (!quiz) {
+      res.status(500).json({ error: 'No quizzes available' });
+      return;
+    }
+    
+    // Mark this article as seen
+    await pool.query(
+      'INSERT INTO seen_articles (user_id, article_id, viewed_at) VALUES ($1, $2, $3) ON CONFLICT (user_id, article_id) DO UPDATE SET viewed_at = $3',
+      [userId, quiz.id, Date.now()]
+    );
+
+    res.json(quiz);
+  } catch (error) {
+    console.error('Error getting unseen quiz:', error);
+    res.status(500).json({
+      error: 'Failed to get unseen quiz',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }

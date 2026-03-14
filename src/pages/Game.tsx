@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Container, Box, Typography, Button, Alert, CircularProgress, TextField, Chip, Stack, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material'
+import { useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
+import { Container, Box, Typography, Button, Alert, CircularProgress, TextField, Chip, Stack, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, IconButton } from '@mui/material'
+import SettingsIcon from '@mui/icons-material/Settings'
 import { useConfig } from '../contexts/ConfigContext'
 import { useQuiz, useQuizAnswer, useGuessSubmit } from '../hooks/useQuiz'
 import NavBar from '../components/NavBar'
@@ -25,6 +28,8 @@ const MASK_LABELS: Record<string, string> = {
 
 export default function Game() {
   const { config } = useConfig()
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   const [guess, setGuess] = useState('')
   const [guesses, setGuesses] = useState<Map<string, Set<string>>>(new Map())
@@ -48,6 +53,8 @@ export default function Game() {
 
   const quizStartedAt = useRef<number>(0)
   const sessionSaved = useRef(false)
+  const answerInputRef = useRef<HTMLInputElement>(null)
+  const answerFetchedRef = useRef(false)
 
   // Record start time whenever a new quiz loads
   useEffect(() => {
@@ -79,7 +86,12 @@ export default function Game() {
         ended_at: endedAt,
         created_at: quizStartedAt.current,
       }),
-    }).catch((err) => console.error('Failed to save quiz session:', err))
+    })
+      .then(() => {
+        // Invalidate the quiz-sessions cache so the home page shows updated stats
+        queryClient.invalidateQueries({ queryKey: ['quiz-sessions'] })
+      })
+      .catch((err) => console.error('Failed to save quiz session:', err))
   }
 
   // Save session whenever the quiz ends (time up or all words guessed)
@@ -89,63 +101,97 @@ export default function Game() {
     }
   }, [isRevealed])
 
-  // Fetch answer and reveal all masks when time runs out
+  // Fetch answer and reveal all masks when quiz ends
   useEffect(() => {
-    if (isRevealed && randomEntry?.id && !answerData && timeRemaining === 0) {
-      fetchAnswer().then((result) => {
-        if (result.data) {
-          setAnswerData(result.data)
-          // Reveal all masks
-          const allMasks = new Map<string, string>()
-          allMasks.set('1111', result.data.solution_adj || '')
-          allMasks.set('2222', result.data.solution_closed_class || '')
-          allMasks.set('3333', result.data.solution_nouns || '')
-          allMasks.set('4444', result.data.solution_numbers || '')
-          allMasks.set('5555', result.data.solution_proper_nouns || '')
-          allMasks.set('6666', result.data.solution_verbs || '')
-          setRevealedMasks(allMasks)
+    if (isRevealed && randomEntry?.id && !answerData && !answerFetchedRef.current) {
+      answerFetchedRef.current = true
+      const revealAllAnswers = async () => {
+        try {
+          console.log('Fetching answer for quiz:', randomEntry.id)
+          const result = await fetchAnswer()
+          console.log('Answer fetch result:', result)
+          
+          if (result?.data) {
+            try {
+              console.log('Setting answer data:', result.data)
+              setAnswerData(result.data)
+              // Reveal all masks - only add if they have values
+              const allMasks = new Map<string, string>()
+              const masks = [
+                { key: '1111', value: result.data.solution_adj },
+                { key: '2222', value: result.data.solution_closed_class },
+                { key: '3333', value: result.data.solution_nouns },
+                { key: '4444', value: result.data.solution_numbers },
+                { key: '5555', value: result.data.solution_proper_nouns },
+                { key: '6666', value: result.data.solution_verbs },
+              ]
+              
+              masks.forEach(({ key, value }) => {
+                if (value !== null && value !== undefined && value !== '') {
+                  allMasks.set(key, String(value))
+                }
+              })
+              
+              console.log('Revealed masks:', Object.fromEntries(allMasks))
+              setRevealedMasks(allMasks)
+            } catch (err) {
+              console.error('Error processing answer data:', err, 'Data was:', result.data)
+              setAnswerData(result.data) // Set data anyway, even if reveal failed
+            }
+          } else {
+            console.error('No data in answer fetch result:', result)
+          }
+        } catch (err) {
+          console.error('Failed to fetch answer:', err)
         }
-      }).catch((err) => {
-        console.error('Failed to fetch answer:', err)
-      })
+      }
+      
+      revealAllAnswers()
     }
-  }, [isRevealed, randomEntry?.id, answerData, timeRemaining, fetchAnswer])
+  }, [isRevealed, randomEntry?.id, answerData])
 
   const handleNewGame = () => {
-    saveQuizSessionRef.current(Date.now())
-    refetch()
-    setGuesses(new Map())
-    setGuess('')
-    setRevealedMasks(new Map())
-    setTimeRemaining(config.timerDuration)
-    setIsRevealed(false)
-    setSuccessMessage(null)
-    setAnswerData(null)
-    setScore(0)
-    setSelectedMask(null)
+    try {
+      saveQuizSessionRef.current(Date.now())
+      refetch()
+      setGuesses(new Map())
+      setGuess('')
+      setRevealedMasks(new Map())
+      setTimeRemaining(config.timerDuration)
+      setIsRevealed(false)
+      setSuccessMessage(null)
+      setAnswerData(null)
+      setScore(0)
+      setSelectedMask(null)
+      answerFetchedRef.current = false
+    } catch (err) {
+      console.error('Error starting new game:', err)
+      window.location.reload()
+    }
   }
 
   useEffect(() => {
+    if (isRevealed) return
+
     if (timeRemaining <= 0) {
       setIsRevealed(true)
       return
     }
 
-    if (isRevealed) return
-
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
-        if (prev <= 1) {
+        const newTime = prev - 1
+        if (newTime <= 0) {
           clearInterval(timer)
           setIsRevealed(true)
           return 0
         }
-        return prev - 1
+        return newTime
       })
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [timeRemaining, isRevealed])
+  }, [isRevealed])
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
@@ -254,7 +300,10 @@ export default function Game() {
           <Box
             key={index}
             component="span"
-            onClick={isBoxRevealed ? undefined : () => setSelectedMask(part)}
+            onClick={isBoxRevealed ? undefined : () => {
+              setSelectedMask(part)
+              answerInputRef.current?.focus()
+            }}
             sx={{
               backgroundColor,
               color: revealedWord ? 'white' : backgroundColor,
@@ -280,8 +329,8 @@ export default function Game() {
   return (
     <>
       <NavBar score={score} />
-      <Container maxWidth="lg">
-        <Box sx={{ my: 4, textAlign: 'left' }}>
+      <Box sx={{ background: '#fafafa', minHeight: '100vh', py: 4 }}>
+        <Container maxWidth="md">
           {isLoading && (
             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
               <CircularProgress size={24} />
@@ -296,63 +345,195 @@ export default function Game() {
           )}
 
           {!isLoading && randomEntry && (
-            <Box sx={{ mt: 4 }}>
-              <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ flex: 1 }} />
-                <Typography
-                  variant="h3"
-                  component="div"
-                  sx={{
-                    fontWeight: 'bold',
-                    color: timeRemaining <= 10 ? 'error.main' : 'primary.main',
-                    fontFamily: 'monospace',
-                    flex: 1,
-                    textAlign: 'center'
-                  }}
-                >
-                  {formatTime(timeRemaining)}
-                </Typography>
-                <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button
-                    variant="contained"
-                    color={!isRevealed ? "secondary" : "primary"}
-                    onClick={handleNewGame}
+            <Box
+              sx={{
+                background: '#ffffff',
+                border: '1px solid #dddddd',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                p: { xs: 3, md: 4 },
+              }}
+            >
+              {/* Newspaper masthead */}
+              <Box sx={{ textAlign: 'center', mb: 2, pb: 1.5, borderBottom: '2px solid #000000', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                {/* Left - Settings */}
+                <Box sx={{ width: 80, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 0.5 }}>
+                  <IconButton 
+                    onClick={() => navigate('/settings')} 
+                    sx={{ 
+                      color: '#000000',
+                      border: '1px solid #cccccc',
+                      borderRadius: '2px',
+                      p: 0.75,
+                      '&:hover': {
+                        backgroundColor: '#f5f5f5',
+                        borderColor: '#000000',
+                      }
+                    }}
+                    size="small"
                   >
-                    {!isRevealed ? "Skip to next quiz" : "Next Quiz"}
-                  </Button>
+                    <SettingsIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+                
+                {/* Center - Title */}
+                <Box sx={{ flex: 1, textAlign: 'center' }}>
+                  <Typography
+                    sx={{
+                      fontFamily: '"Cormorant Garamond", Georgia, serif',
+                      fontSize: '1.2rem',
+                      fontWeight: 800,
+                      letterSpacing: '0.15em',
+                      color: '#000000',
+                      mb: 0.05,
+                      fontStyle: 'italic',
+                    }}
+                  >
+                    THE DAILY
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: '"Didot", "Playfair Display", Georgia, serif',
+                      fontSize: '2.8rem',
+                      fontWeight: 900,
+                      letterSpacing: '0.08em',
+                      color: '#000000',
+                      lineHeight: 1,
+                      fontStyle: 'italic',
+                      mb: 0.5,
+                    }}
+                  >
+                    NewsGap
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: '"Cormorant Garamond", Georgia, serif',
+                      fontSize: '1.32rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.1em',
+                      color: timeRemaining <= 10 ? '#d32f2f' : '#666666',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {formatTime(timeRemaining)}
+                  </Typography>
+                </Box>
+
+                {/* Right - Score */}
+                <Box sx={{ width: 80, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1.5 }}>
+                  {score !== undefined && (
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography
+                        sx={{
+                          fontSize: '0.7rem',
+                          letterSpacing: '0.1em',
+                          color: '#666666',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Score
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: '1.4rem',
+                          fontWeight: 900,
+                          color: '#000000',
+                          fontFamily: 'monospace',
+                        }}
+                      >
+                        {score}
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
               </Box>
 
+              {/* Timer and controls - now only button */}
+              <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleNewGame}
+                  sx={{
+                    borderColor: '#000000',
+                    color: '#000000',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    '&:hover': {
+                      backgroundColor: '#000000',
+                      color: '#ffffff',
+                    },
+                  }}
+                >
+                  {!isRevealed ? "Skip" : "Next"}
+                </Button>
+              </Box>
+
+              {/* Article text */}
+              <Box sx={{ my: 4 }}>
+                <Typography
+                  sx={{
+                    fontFamily: 'Georgia, serif',
+                    fontSize: '1.1rem',
+                    lineHeight: 1.8,
+                    color: '#000000',
+                    textAlign: 'justify',
+                  }}
+                >
+                  {renderMaskedText()}
+                </Typography>
+              </Box>
+
               {successMessage && (
-                <Alert severity="success" sx={{ mb: 3 }}>
+                <Alert
+                  severity="success"
+                  sx={{
+                    mb: 3,
+                    backgroundColor: '#e8f5e9',
+                    color: '#2e7d32',
+                    border: '1px solid #2e7d32',
+                  }}
+                >
                   {successMessage}
                 </Alert>
               )}
 
               {isRevealed && timeRemaining === 0 && !successMessage && (
-                <Alert severity="info" sx={{ mb: 3 }}>
-                  Time's up! Move to the next quiz.
+                <Alert
+                  severity="info"
+                  sx={{
+                    mb: 3,
+                    backgroundColor: '#e3f2fd',
+                    color: '#0d47a1',
+                    border: '1px solid #0d47a1',
+                  }}
+                >
+                  Time's up! Review the article above and move to the next challenge.
                 </Alert>
               )}
 
-              <Typography
-                variant="h4"
-                component="h2"
-                gutterBottom
-                sx={{ lineHeight: 1.6 }}
-              >
-                {renderMaskedText()}
-              </Typography>
-
-              <Box component="form" onSubmit={handleGuessSubmit} sx={{ mt: 4 }}>
+              {/* Guess form */}
+              <Box component="form" onSubmit={handleGuessSubmit} sx={{ my: 4, borderTop: '1px solid #cccccc', pt: 3 }}>
                 <FormControl component="fieldset" sx={{ mb: 2, display: 'block' }}>
-                  <FormLabel component="legend" sx={{ fontSize: '0.875rem', mb: 0.5 }}>
-                    Guessing for:
+                  <FormLabel
+                    component="legend"
+                    sx={{
+                      fontSize: '0.85rem',
+                      mb: 1.5,
+                      fontWeight: 700,
+                      letterSpacing: '0.05em',
+                      color: '#000000',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    What word type are you guessing?
                   </FormLabel>
                   <RadioGroup
                     row
                     value={selectedMask ?? ''}
                     onChange={(e) => setSelectedMask(e.target.value)}
+                    sx={{ gap: 2 }}
                   >
                     {Object.keys(MASK_LABELS)
                       .filter((code) => presentMasks.has(code))
@@ -364,48 +545,112 @@ export default function Game() {
                           control={
                             <Radio
                               size="small"
-                              sx={{ color: MASK_COLORS[code as keyof typeof MASK_COLORS], '&.Mui-checked': { color: MASK_COLORS[code as keyof typeof MASK_COLORS] } }}
+                              sx={{
+                                color: '#CCCCCC',
+                                '&.Mui-checked': { color: MASK_COLORS[code as keyof typeof MASK_COLORS] },
+                              }}
                             />
                           }
-                          label={MASK_LABELS[code]}
+                          label={
+                            <Typography sx={{ fontSize: '0.9rem', fontWeight: 500, color: MASK_COLORS[code as keyof typeof MASK_COLORS] }}>
+                              {MASK_LABELS[code]}
+                            </Typography>
+                          }
                         />
                       ))}
                   </RadioGroup>
                 </FormControl>
-                <Box sx={{ display: 'flex', gap: 2 }}>
+
+                <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
                   <TextField
                     fullWidth
                     variant="outlined"
-                    label="Make a guess"
+                    placeholder="Enter your guess..."
                     value={guess}
                     onChange={handleGuessChange}
-                    placeholder="Enter a word..."
                     error={!!guessError}
                     helperText={guessError}
                     disabled={isRevealed}
+                    inputRef={answerInputRef}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        fontFamily: 'Georgia, serif',
+                        fontSize: '1rem',
+                        '& fieldset': {
+                          borderColor: '#cccccc',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: '#000000',
+                        },
+                      },
+                    }}
                   />
-                  <Button type="submit" variant="contained" sx={{ minWidth: 100 }} disabled={isRevealed}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={isRevealed}
+                    sx={{
+                      backgroundColor: '#000000',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      minWidth: 110,
+                      '&:hover': {
+                        backgroundColor: '#333333',
+                      },
+                      '&:disabled': {
+                        backgroundColor: '#cccccc',
+                        color: '#666666',
+                      },
+                    }}
+                  >
                     Guess
                   </Button>
                 </Box>
               </Box>
 
+              {/* Guesses summary */}
               {guesses.size > 0 && (
-                <Box sx={{ mt: 3 }}>
-                  <Typography variant="h6" gutterBottom>
-                    Your guesses ({Array.from(guesses.values()).reduce((n, s) => n + s.size, 0)}):
+                <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid #cccccc' }}>
+                  <Typography
+                    sx={{
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      color: '#666666',
+                      mb: 2,
+                    }}
+                  >
+                    Your Answers ({Array.from(guesses.values()).reduce((n, s) => n + s.size, 0)})
                   </Typography>
-                  <Stack spacing={1}>
+                  <Stack spacing={1.5}>
                     {Object.keys(MASK_LABELS)
                       .filter((code) => guesses.get(code)?.size)
                       .map((code) => (
-                        <Box key={code} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                          <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: MASK_COLORS[code as keyof typeof MASK_COLORS], flexShrink: 0 }} />
-                          <Typography variant="body2" sx={{ fontWeight: 'bold', mr: 0.5 }}>
-                            {MASK_LABELS[code]}:
+                        <Box key={code} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                          <Typography
+                            sx={{
+                              fontSize: '0.9rem',
+                              fontWeight: 700,
+                              color: '#000000',
+                              minWidth: 100,
+                            }}
+                          >
+                            {MASK_LABELS[code]}
                           </Typography>
                           {Array.from(guesses.get(code)!).map((word) => (
-                            <Chip key={word} label={word} size="small" />
+                            <Chip
+                              key={word}
+                              label={word}
+                              size="small"
+                              sx={{
+                                backgroundColor: '#f0f0f0',
+                                fontFamily: 'Georgia, serif',
+                                fontWeight: 500,
+                              }}
+                            />
                           ))}
                         </Box>
                       ))}
@@ -414,8 +659,8 @@ export default function Game() {
               )}
             </Box>
           )}
-        </Box>
-      </Container>
+        </Container>
+      </Box>
     </>
   )
 }

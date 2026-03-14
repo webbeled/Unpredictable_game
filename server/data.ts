@@ -56,7 +56,9 @@ function generateId(fileName: string, sheetName: string, rowIndex: number): stri
 export function loadData(): Record<string, SheetData> {
   if (!cachedOdsData) {
     const dataDir = path.join(__dirname, '..', 'src', 'assets', 'data');
+    console.log('Loading data from:', dataDir);
     cachedOdsData = loadAllOdsFiles(dataDir);
+    console.log('Data loaded successfully. Files:', Object.keys(cachedOdsData));
 
     // Build index of all entries
     allEntries = [];
@@ -82,7 +84,7 @@ export function loadData(): Record<string, SheetData> {
       }
     }
 
-    console.log(`Loaded ${Object.keys(cachedOdsData).length} ODS files with ${allEntries.length} total entries`);
+    console.log(`Loaded ${Object.keys(cachedOdsData).length} ODS/CSV files with ${allEntries.length} total entries`);
   }
   return cachedOdsData;
 }
@@ -175,4 +177,34 @@ export function checkGuess(id: string, guess: string): { mask: string; word: str
   }
 
   return false;
+}
+
+/**
+ * Get a random unseen quiz for a user
+ */
+export function getRandomUnseenQuiz(seenIds: Set<string>): QuizEntry | null {
+  loadData(); // Ensure data is loaded
+
+  if (allEntries.length === 0) {
+    throw new Error('No quiz entries found');
+  }
+
+  // Get all entries that haven't been seen
+  const unseenEntries = allEntries.filter(entry => {
+    const id = generateId(entry.fileName, entry.sheetName, entry.rowIndex);
+    return !seenIds.has(id);
+  });
+
+  // If all have been seen, reset and pick any random one
+  const availableEntries = unseenEntries.length > 0 ? unseenEntries : allEntries;
+  const randomEntry = availableEntries[Math.floor(Math.random() * availableEntries.length)];
+  const id = generateId(randomEntry.fileName, randomEntry.sheetName, randomEntry.rowIndex);
+
+  return {
+    id,
+    fileName: randomEntry.fileName,
+    sheetName: randomEntry.sheetName,
+    annotate: randomEntry.annotate,
+    to_annotate: randomEntry.rowData.to_annotate,
+  };
 }
