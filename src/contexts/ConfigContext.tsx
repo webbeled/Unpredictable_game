@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 
 export interface Config {
   timerDuration: number
@@ -35,8 +35,9 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config))
   }, [config])
 
-  const updateConfig = (newConfig: Partial<Config>) => {
-    setConfig((prev) => ({ ...prev, ...newConfig }))
+  const updateConfig = () => {
+    // Timer is now fixed at 180 seconds, ignore any update attempts
+    // This ensures the timer cannot be changed
   }
 
   const resetConfig = () => {

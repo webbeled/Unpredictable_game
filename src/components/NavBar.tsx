@@ -1,5 +1,4 @@
 import { AppBar, Toolbar, Typography, IconButton, Box } from '@mui/material'
-import SettingsIcon from '@mui/icons-material/Settings'
 import LogoutIcon from '@mui/icons-material/Logout'
 import HomeIcon from '@mui/icons-material/Home'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -76,9 +75,6 @@ export default function NavBar({ score }: NavBarProps) {
               Score: {score}
             </Typography>
           )}
-          <IconButton color="inherit" onClick={() => navigate('/settings')} sx={{ color: '#000000' }}>
-            <SettingsIcon />
-          </IconButton>
           <Box sx={{ position: 'relative' }}>
             <IconButton color="inherit" onClick={() => logout().then(() => navigate('/auth'))} sx={{ color: '#000000' }}>
               <LogoutIcon />

@@ -6,7 +6,6 @@ import { ConfigProvider } from './contexts/ConfigContext'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Game from './pages/Game'
-import Settings from './pages/Settings'
 import Auth from './pages/Auth'
 import Home from './pages/Home'
 
@@ -36,7 +35,6 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/quiz" element={<ProtectedRoute><Game /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               </Routes>
             </Router>
           </ConfigProvider>
