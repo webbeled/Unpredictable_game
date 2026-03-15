@@ -42,26 +42,24 @@ function formatDate(ms: number | string) {
   return new Date(Number(ms)).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-// Animated Newspaper Component
 function AnimatedNewspaper() {
   const [displayText, setDisplayText] = useState<Array<string | AnimatedTextPart>>([])
   const [isTyping, setIsTyping] = useState(true)
 
-  // Article with color-coded blanks: {text, color}
   const maskedArticle: AnimatedTextPart[] = [
     { text: 'Certain', color: '' },
     { text: ' ', color: '' },
     { text: 'words', color: '' },
     { text: ' have been removed from this ', color: '' },
-    { text: '_______', color: '#FF6B6B' }, // red blank
+    { text: '_______', color: '#FF6B6B' },
     { text: '. Can you ', color: '' },
-    { text: '_____', color: '#4ECDC4' }, // teal blank
+    { text: '_____', color: '#4ECDC4' },
     { text: ' what they are? Use the color-coded hints and your ', color: '' },
-    { text: '_________', color: '#4CAF50' }, // green blank
+    { text: '_________', color: '#4CAF50' },
     { text: ' to fill in the blanks before time runs out. Every correct ', color: '' },
-    { text: '______', color: '#FFE66D' }, // yellow blank
+    { text: '______', color: '#FFE66D' },
     { text: ' earns you ', color: '' },
-    { text: '______', color: '#C7CEEA' }, // lavender blank
+    { text: '______', color: '#C7CEEA' },
     { text: '. Good luck!', color: '' },
   ]
 
@@ -142,21 +140,21 @@ function AnimatedNewspaper() {
         {displayText.map((item, idx) => {
           if (typeof item === 'string') {
             return <span key={idx}>{item}</span>
-          } else {
-            return (
-              <span
-                key={idx}
-                style={{
-                  backgroundColor: item.color,
-                  padding: '2px 4px',
-                  borderRadius: '2px',
-                  fontWeight: 'bold',
-                }}
-              >
-                {item.text}
-              </span>
-            )
           }
+
+          return (
+            <span
+              key={idx}
+              style={{
+                backgroundColor: item.color,
+                padding: '2px 4px',
+                borderRadius: '2px',
+                fontWeight: 'bold',
+              }}
+            >
+              {item.text}
+            </span>
+          )
         })}
         {isTyping && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
       </Box>
@@ -201,7 +199,6 @@ function StatsSection() {
 
   return (
     <Box sx={{ width: '100%' }}>
-      {/* Stats Cards - Compact Horizontal Layout */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5, mb: 4 }}>
         <Card
           sx={{
@@ -262,7 +259,6 @@ function StatsSection() {
         </Card>
       </Box>
 
-      {/* Chart - Compact */}
       <Paper
         elevation={0}
         sx={{
@@ -326,6 +322,98 @@ function StatsSection() {
   )
 }
 
+function OrnamentalRule() {
+  const motifs = Array.from({ length: 14 }, (_, index) => index)
+  const segmentWidth = 80
+  const viewBoxWidth = motifs.length * segmentWidth
+
+  return (
+    <Box
+      aria-hidden="true"
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        width: '100%',
+        mb: 2.5,
+        overflow: 'hidden',
+      }}
+    >
+      <Box
+        component="svg"
+        viewBox={`0 0 ${viewBoxWidth} 16`}
+        preserveAspectRatio="none"
+        sx={{
+          width: '100%',
+          maxWidth: '860px',
+          height: { xs: 10, sm: 12 },
+          overflow: 'visible',
+        }}
+      >
+        {motifs.map((index) => {
+          const x = index * segmentWidth
+
+          return (
+            <g
+              key={index}
+              transform={`translate(${x}, 0)`}
+              fill="none"
+              stroke="#000"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path
+                d="M0 8 C6 2.2, 14 2.2, 20 8 C26 13.8, 34 13.8, 40 8 C46 2.2, 54 2.2, 60 8 C66 13.8, 74 13.8, 80 8"
+                strokeWidth="1.2"
+              />
+              <path
+                d="M24 8 C27.5 5.4, 30.5 5.4, 34 8 C37.5 10.6, 40.5 10.6, 44 8"
+                strokeWidth="0.9"
+              />
+              <path
+                d="M10 8 C12 5.2, 15 4.2, 18 4.8 C16 6.3, 15 8.1, 15.4 10.6"
+                strokeWidth="0.75"
+              />
+              <path
+                d="M10 8 C12 10.8, 15 11.8, 18 11.2 C16 9.7, 15 7.9, 15.4 5.4"
+                strokeWidth="0.75"
+              />
+              <circle cx="20" cy="8" r="1.15" fill="#000" stroke="none" />
+              <path
+                d="M28 8 C29.2 5.8, 31.2 4.8, 33.5 5.2 C32.4 6.7, 32 8, 32.4 10"
+                strokeWidth="0.7"
+              />
+              <path
+                d="M28 8 C29.2 10.2, 31.2 11.2, 33.5 10.8 C32.4 9.3, 32 8, 32.4 6"
+                strokeWidth="0.7"
+              />
+              <polygon points="38,8 42,4 46,8 42,12" fill="#000" stroke="none" />
+              <path d="M38 8 C40 6.1, 42 5.2, 44 8 C42 10.8, 40 9.9, 38 8" strokeWidth="0.65" />
+              <path d="M46 8 C44 6.1, 42 5.2, 40 8 C42 10.8, 44 9.9, 46 8" strokeWidth="0.65" />
+              <path
+                d="M50 8 C52.4 5.1, 55.4 4.4, 58.5 5 C57 6.8, 56.3 8.3, 56.8 10.6"
+                strokeWidth="0.75"
+              />
+              <path
+                d="M50 8 C52.4 10.9, 55.4 11.6, 58.5 11 C57 9.2, 56.3 7.7, 56.8 5.4"
+                strokeWidth="0.75"
+              />
+              <circle cx="60" cy="8" r="1.15" fill="#000" stroke="none" />
+              <path
+                d="M62 8 C64.3 6.1, 66.5 5.2, 69 5.8 C67.7 7.2, 67.2 8.5, 67.6 10.3"
+                strokeWidth="0.7"
+              />
+              <path
+                d="M62 8 C64.3 9.9, 66.5 10.8, 69 10.2 C67.7 8.8, 67.2 7.5, 67.6 5.7"
+                strokeWidth="0.7"
+              />
+            </g>
+          )
+        })}
+      </Box>
+    </Box>
+  )
+}
+
 export default function Home() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -345,7 +433,6 @@ export default function Home() {
           px: 2,
         }}
       >
-        {/* Two Column Layout - Animation + Main Content */}
         <Box
           sx={{
             display: 'grid',
@@ -357,22 +444,8 @@ export default function Home() {
             width: '100%',
           }}
         >
-          {/* Left - Main Hero Section */}
           <Box sx={{ textAlign: 'center' }}>
-            {/* Ornamental rule - top */}
-            <Box sx={{ 
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 0,
-              mb: 2.5,
-              fontSize: '7px',
-              color: '#000',
-              letterSpacing: '-3px',
-            }}>
-              ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼
-            </Box>
-
+            <OrnamentalRule />
 
             <Typography
               sx={{
@@ -400,21 +473,8 @@ export default function Home() {
               NewsGap
             </Typography>
 
-            {/* Ornamental rule - bottom */}
-            <Box sx={{ 
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 0,
-              mb: 2.5,
-              fontSize: '7px',
-              color: '#000',
-              letterSpacing: '-3px',
-            }}>
-              ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼ ◆ ∿ ❖ ∿ ◆ ∼
-            </Box>
+            <OrnamentalRule />
 
-            {/* Call to Action - Bigger Button */}
             <Button
               variant="contained"
               startIcon={<PlayArrowIcon />}
@@ -441,13 +501,11 @@ export default function Home() {
             </Button>
           </Box>
 
-          {/* Right - Animated Newspaper */}
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             <AnimatedNewspaper />
           </Box>
         </Box>
 
-        {/* Stats Section - Full Width Below */}
         {user && (
           <Container maxWidth="md">
             <StatsSection />
