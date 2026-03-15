@@ -11,7 +11,7 @@ interface ConfigContextType {
 }
 
 const defaultConfig: Config = {
-  timerDuration: 60,
+  timerDuration: 180,
 }
 
 const CONFIG_STORAGE_KEY = 'redactle-config'

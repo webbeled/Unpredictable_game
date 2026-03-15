@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Container, Box, Typography, Button, Alert, CircularProgress, TextField, Chip, Stack, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, IconButton } from '@mui/material'
-import SettingsIcon from '@mui/icons-material/Settings'
+import { Container, Box, Typography, Button, Alert, CircularProgress, TextField, Chip, Stack, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material'
 import { useConfig } from '../contexts/ConfigContext'
 import { useQuiz, useQuizAnswer, useGuessSubmit } from '../hooks/useQuiz'
 import NavBar from '../components/NavBar'
@@ -354,29 +353,9 @@ export default function Game() {
               }}
             >
               {/* Newspaper masthead */}
-              <Box sx={{ textAlign: 'center', mb: 2, pb: 1.5, borderBottom: '2px solid #000000', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                {/* Left - Settings */}
-                <Box sx={{ width: 80, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 0.5 }}>
-                  <IconButton 
-                    onClick={() => navigate('/settings')} 
-                    sx={{ 
-                      color: '#000000',
-                      border: '1px solid #cccccc',
-                      borderRadius: '2px',
-                      p: 0.75,
-                      '&:hover': {
-                        backgroundColor: '#f5f5f5',
-                        borderColor: '#000000',
-                      }
-                    }}
-                    size="small"
-                  >
-                    <SettingsIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-                
+              <Box sx={{ textAlign: 'center', mb: 2, pb: 1.5, borderBottom: '2px solid #000000' }}>
                 {/* Center - Title */}
-                <Box sx={{ flex: 1, textAlign: 'center' }}>
+                <Box sx={{ textAlign: 'center' }}>
                   <Typography
                     sx={{
                       fontFamily: '"Cormorant Garamond", Georgia, serif',
