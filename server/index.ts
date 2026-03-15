@@ -10,6 +10,7 @@ import quizSessionsRouter from './quizSessions.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || "localhost";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
 
@@ -156,6 +157,6 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
 });
