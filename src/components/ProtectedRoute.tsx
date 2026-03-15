@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { CircularProgress, Box } from '@mui/material'
 import { useAuth } from '../contexts/AuthContext'
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth()

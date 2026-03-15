@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
 import { Container, Box, Typography, Button, Alert, CircularProgress, TextField, Chip, Stack, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material'
 import { useConfig } from '../contexts/ConfigContext'
 import { useQuiz, useQuizAnswer, useGuessSubmit } from '../hooks/useQuiz'
@@ -28,7 +27,6 @@ const MASK_LABELS: Record<string, string> = {
 export default function Game() {
   const { config } = useConfig()
   const queryClient = useQueryClient()
-  const navigate = useNavigate()
 
   const [guess, setGuess] = useState('')
   const [guesses, setGuesses] = useState<Map<string, Set<string>>>(new Map())

@@ -22,6 +22,11 @@ interface QuizSession {
   ended_at: number | string | null
 }
 
+type AnimatedTextPart = {
+  text: string
+  color: string
+}
+
 function useUserStats() {
   return useQuery<QuizSession[]>({
     queryKey: ['quiz-sessions'],
@@ -39,23 +44,13 @@ function formatDate(ms: number | string) {
 
 // Animated Newspaper Component
 function AnimatedNewspaper() {
-  const [displayText, setDisplayText] = useState<(string | { text: string; color: string })[]>([])
+  const [displayText, setDisplayText] = useState<Array<string | AnimatedTextPart>>([])
   const [isTyping, setIsTyping] = useState(true)
 
-  // Color mapping for each word category (matching Game.tsx)
-  const MASK_COLORS = {
-    '1111': '#FF6B6B', // Adjectives - red
-    '2222': '#4ECDC4', // Closed class - teal
-    '3333': '#4CAF50', // Nouns - green
-    '4444': '#FFE66D', // Numbers - yellow
-    '5555': '#C7CEEA', // Proper nouns - lavender
-    '6666': '#FFA07A', // Verbs - light salmon
-  }
-
   // Article with color-coded blanks: {text, color}
-  const maskedArticle = [
+  const maskedArticle: AnimatedTextPart[] = [
     { text: 'Certain', color: '' },
-    { text: ' ' },
+    { text: ' ', color: '' },
     { text: 'words', color: '' },
     { text: ' have been removed from this ', color: '' },
     { text: '_______', color: '#FF6B6B' }, // red blank
@@ -74,32 +69,27 @@ function AnimatedNewspaper() {
     if (!isTyping) return
 
     let charIndex = 0
-    let displayIndex = 0
     const timer = setInterval(() => {
       let currentChar = 0
-      let builtText: (string | { text: string; color: string })[] = []
+      const builtText: Array<string | AnimatedTextPart> = []
 
       for (let i = 0; i < maskedArticle.length; i++) {
         const item = maskedArticle[i]
-        const itemText = typeof item === 'string' ? item : item.text
+        const itemText = item.text
 
         if (currentChar + itemText.length <= charIndex) {
           builtText.push(item)
           currentChar += itemText.length
         } else if (currentChar < charIndex) {
           const partial = itemText.substring(0, charIndex - currentChar)
-          if (typeof item === 'string') {
-            builtText.push(partial)
-          } else {
-            builtText.push({ text: partial, color: item.color })
-          }
+          builtText.push({ text: partial, color: item.color })
           break
         } else {
           break
         }
       }
 
-      if (charIndex < maskedArticle.reduce((sum, item) => sum + (typeof item === 'string' ? item.length : item.text.length), 0)) {
+      if (charIndex < maskedArticle.reduce((sum, item) => sum + item.text.length, 0)) {
         setDisplayText(builtText)
         charIndex++
       } else {
@@ -201,7 +191,6 @@ function StatsSection() {
     )
   }
 
-  const avg = Math.round(sessions.reduce((sum, s) => sum + s.score, 0) / sessions.length)
   const best = Math.max(...sessions.map((s) => s.score))
   const total = sessions.length
 
