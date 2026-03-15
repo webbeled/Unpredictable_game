@@ -12,7 +12,7 @@ interface NavBarProps {
 export default function NavBar({ score }: NavBarProps) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
   const isGamePage = location.pathname === '/quiz'
 
   const handleLogoClick = () => navigate('/')
@@ -62,6 +62,7 @@ export default function NavBar({ score }: NavBarProps) {
             justifyContent: 'flex-end',
             alignItems: 'center',
             gap: 1.5,
+            mr: 'auto',
           }}
         >
           {score !== undefined && (
@@ -78,9 +79,16 @@ export default function NavBar({ score }: NavBarProps) {
           <IconButton color="inherit" onClick={() => navigate('/settings')} sx={{ color: '#000000' }}>
             <SettingsIcon />
           </IconButton>
-          <IconButton color="inherit" onClick={() => logout().then(() => navigate('/auth'))} sx={{ color: '#000000' }}>
-            <LogoutIcon />
-          </IconButton>
+          <Box sx={{ position: 'relative' }}>
+            <IconButton color="inherit" onClick={() => logout().then(() => navigate('/auth'))} sx={{ color: '#000000' }}>
+              <LogoutIcon />
+            </IconButton>
+            {user && (
+              <Typography sx={{ fontSize: '0.75rem', color: '#666666', position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: '100%', whiteSpace: 'nowrap', mt: -0.5 }}>
+                {user.email}
+              </Typography>
+            )}
+          </Box>
         </Box>
       </Toolbar>
     </AppBar>

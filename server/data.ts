@@ -163,14 +163,10 @@ export function checkGuess(id: string, guess: string): { mask: string; word: str
     { mask: '6666', field: entry.rowData.solution_verbs },
   ];
 
-  console.log('Checking guess:', normalizedGuess);
-  console.log('Available solutions:', solutionMap.map(s => ({ mask: s.mask, field: s.field })));
-
   for (const { mask, field } of solutionMap) {
     if (field) {
       const normalizedSolution = String(field).toLowerCase().trim();
       if (normalizedGuess === normalizedSolution) {
-        console.log('Match found! Mask:', mask, 'Word:', field);
         return { mask, word: String(field) };
       }
     }
