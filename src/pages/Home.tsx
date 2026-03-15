@@ -18,8 +18,8 @@ import {
 interface QuizSession {
   quiz_id: string
   score: number
-  created_at: number
-  ended_at: number | null
+  created_at: number | string
+  ended_at: number | string | null
 }
 
 function useUserStats() {
@@ -33,8 +33,8 @@ function useUserStats() {
   })
 }
 
-function formatDate(ms: number) {
-  return new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+function formatDate(ms: number | string) {
+  return new Date(Number(ms)).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 // Animated Newspaper Component
