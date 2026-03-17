@@ -460,8 +460,8 @@ export default function Game() {
                 </Box>
               </Box>
 
-              {/* Timer and controls - now only button */}
-              <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+              {/* Timer and controls */}
+              <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {!isRevealed && (
                   <Button
                     variant="outlined"
@@ -482,24 +482,26 @@ export default function Game() {
                     I Give Up
                   </Button>
                 )}
-                <Button
-                  variant="outlined"
-                  onClick={handleNewGame}
-                  sx={{
-                    borderColor: '#000000',
-                    color: '#000000',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    '&:hover': {
-                      backgroundColor: '#000000',
-                      color: '#ffffff',
-                    },
-                  }}
-                >
-                  {!isRevealed ? "Skip" : "Next"}
-                </Button>
+                {isRevealed && (
+                  <Button
+                    variant="outlined"
+                    onClick={handleNewGame}
+                    sx={{
+                      borderColor: '#000000',
+                      color: '#000000',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      '&:hover': {
+                        backgroundColor: '#000000',
+                        color: '#ffffff',
+                      },
+                    }}
+                  >
+                    Next
+                  </Button>
+                )}
               </Box>
 
               {/* Article text */}
