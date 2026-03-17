@@ -38,10 +38,6 @@ function useUserStats() {
   })
 }
 
-function formatDate(ms: number | string) {
-  return new Date(Number(ms)).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
 function AnimatedNewspaper() {
   const [displayText, setDisplayText] = useState<Array<string | AnimatedTextPart>>([])
   const [isTyping, setIsTyping] = useState(true)
