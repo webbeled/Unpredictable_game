@@ -38,6 +38,7 @@ export default function Game() {
   const [isRevealed, setIsRevealed] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [answerData, setAnswerData] = useState<any>(null)
+  const [scorePerPos, setScorePerPos] = useState<Map<string, number>>(new Map())
 
   const { data: randomEntry, isLoading, error, refetch } = useQuiz()
 
@@ -61,13 +62,37 @@ export default function Game() {
     }
   }, [randomEntry?.id])
 
-  // Mutable ref so the effect below never goes stale but also never re-fires
-  // just because guesses/score changed — only fires when isRevealed flips.
   const saveQuizSessionRef = useRef<(endedAt: number) => void>(() => {})
   saveQuizSessionRef.current = (endedAt: number) => {
     if (sessionSaved.current || !randomEntry?.id) return
     sessionSaved.current = true
 
+    // Map POS codes to field names
+    const posMap: Record<string, string> = {
+      '1111': 'adj',
+      '2222': 'func',
+      '3333': 'noun',
+      '4444': 'num',
+      '5555': 'propn',
+      '6666': 'verb',
+    }
+
+    // Build the data structure for each POS
+    const posData: Record<string, any> = {}
+    guesses.forEach((guessSet, posMask) => {
+      const posField = posMap[posMask]
+      if (posField) {
+        const guessesArray = Array.from(guessSet)
+        const isCorrect = revealedMasks.has(posMask) ? 1 : 0
+        const scoreBeforeGuess = scorePerPos.get(posMask) ?? null
+
+        posData[`${posField}_correct`] = isCorrect
+        posData[`${posField}_score_before_guess`] = isCorrect ? scoreBeforeGuess : null
+        posData[`${posField}_guesses`] = guessesArray.join(';') // Join guesses with semicolon
+      }
+    })
+
+    // Also include guesses in legacy format
     const guessedWords = Array.from(guesses.entries()).flatMap(([partOfSpeech, words]) =>
       Array.from(words).map((word) => ({ word, part_of_speech: partOfSpeech }))
     )
@@ -82,6 +107,7 @@ export default function Game() {
         guessed_words: guessedWords,
         ended_at: endedAt,
         created_at: quizStartedAt.current,
+        ...posData,
       }),
     })
       .then(() => {
@@ -154,6 +180,7 @@ export default function Game() {
       setGuesses(new Map())
       setGuess('')
       setRevealedMasks(new Map())
+      setScorePerPos(new Map())
       setTimeRemaining(config.timerDuration)
       setIsRevealed(false)
       setSuccessMessage(null)
@@ -225,6 +252,16 @@ export default function Game() {
       setGuessError(null)
 
       if (result.correct && result.mask && result.word) {
+        // Record the score BEFORE awarding points for this guess
+        const mask = result.mask
+        setScorePerPos((prev) => {
+          const newScorePerPos = new Map(prev)
+          if (!newScorePerPos.has(mask)) {
+            newScorePerPos.set(mask, score)
+          }
+          return newScorePerPos
+        })
+
         // Award 100 points for correct guess
         setScore((prev) => prev + 100)
 
