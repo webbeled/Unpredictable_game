@@ -191,15 +191,16 @@ function StatsSection() {
 
   const best = Math.max(...sessions.map((s) => s.score))
   const total = sessions.length
+  const average = Math.round((sessions.reduce((sum, s) => sum + s.score, 0) / sessions.length) * 10) / 10
 
-  const chartData = sessions.map((s) => ({
-    date: formatDate(s.created_at),
+  const chartData = sessions.map((s, index) => ({
+    gameNumber: index + 1,
     score: s.score,
   }))
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5, mb: 4 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1.5, mb: 4 }}>
         <Card
           sx={{
             px: 2,
@@ -236,6 +237,25 @@ function StatsSection() {
           </Typography>
           <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '10px', color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>
             Best
+          </Typography>
+        </Card>
+        <Card
+          sx={{
+            px: 2,
+            py: 1.5,
+            borderRadius: 0,
+            background: '#fff',
+            border: '1px solid #ddd',
+            boxShadow: 'none',
+            textAlign: 'center',
+            '&:hover': { boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
+          }}
+        >
+          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '22px', fontWeight: 'bold' }}>
+            {average}
+          </Typography>
+          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '10px', color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>
+            Average
           </Typography>
         </Card>
         <Card
@@ -291,7 +311,7 @@ function StatsSection() {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
             <XAxis
-              dataKey="date"
+              dataKey="gameNumber"
               tick={{ fontSize: 9, fill: '#888' }}
               tickLine={false}
               axisLine={false}

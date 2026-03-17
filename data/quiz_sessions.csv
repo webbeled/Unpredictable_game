@@ -1,0 +1,12 @@
+"id","quiz_id","user_id","score","created_at","ended_at","adj_score_before_guess","adj_correct","adj_guesses","func_score_before_guess","func_correct","func_guesses","noun_score_before_guess","noun_correct","noun_guesses","num_score_before_guess","num_correct","num_guesses","propn_score_before_guess","propn_correct","propn_guesses","verb_score_before_guess","verb_correct","verb_guesses"
+"11","5c254d36-a41b-4e9d-aa20-e314bb93afb2",2,200,"1773789948222","1773789993749",0,1,"working",,0,"the;ehir;above;benath;beneath;below;into;behind",,0,,,0,,,0,,100,1,"bought;built"
+"10","639747b9-eede-42c2-ae07-76c1976dc770",2,0,"1773789942219","1773789943209",,0,,,0,,,0,,,0,,,0,,,0,
+"9","fdf8ee2a-a840-4496-b0b7-afff2dbed0b1",2,400,"1773789793925","1773789795589",100,1,"new;senior",200,1,"after",,0,"aides;personnel;staff;representatives;congressmen;team;cabinet",0,1,"one",300,1,"brzil;brazil",,0,
+"8","c949ebe3-4236-4232-8b7f-6aaa404dde43",2,0,"1773789579610","1773789580599",,0,,,0,,,0,,,0,,,0,,,0,
+"7","7ca06908-1bd4-4410-a6de-6fa6cbbc8864",2,0,"1773789567453","1773789570428",,0,,,0,,,0,,,0,,,0,,,0,
+"6","96a3dab8-d132-4da3-a76a-1ac6f2459208",2,500,"1773789314395","1773789348949",,0,"new;fresh",0,1,"in",400,1,"women",,0,,100,1,"state;status",300,1,"in;on;held"
+"5","2420e6e0-5e2f-4dab-998c-a50b382c89cf",2,0,"1773789302227","1773789312661",,0,,,0,,,0,,,0,,,0,,,0,
+"4","35af395e-5574-4255-bc95-b52fddd32556",2,200,"1773789097959","1773789152531",,0,,0,1,"in;during;after",,0,"ban",,0,"many;four;five;three;two;six;seven;eight;nine;ten;11;10;9;8;7;6;5;4;3;2;14;15;100",100,1,"brazil",,0,
+"3","55a16b5a-a157-42cd-b72f-4d517108b3f8",2,0,"1773789085771","1773789088762",,0,,,0,,,0,,,0,,,0,,,0,
+"2","5c254d36-a41b-4e9d-aa20-e314bb93afb2",2,0,"1773789071153","1773789079260",,0,,,0,,,0,,,0,,,0,,,0,
+"1","aacb0878-720a-4780-9606-aed58b729b2e",1,200,"1773784138421","1773784183421",0,1,,,0,,100,1,,,0,,,0,,100,0,
