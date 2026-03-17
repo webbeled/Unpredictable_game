@@ -77,19 +77,17 @@ export default function Game() {
       '6666': 'verb',
     }
 
-    // Build the data structure for each POS
+    // Build the data structure for EACH POS (including those not guessed)
     const posData: Record<string, any> = {}
-    guesses.forEach((guessSet, posMask) => {
-      const posField = posMap[posMask]
-      if (posField) {
-        const guessesArray = Array.from(guessSet)
-        const isCorrect = revealedMasks.has(posMask) ? 1 : 0
-        const scoreBeforeGuess = scorePerPos.get(posMask) ?? null
+    Object.entries(posMap).forEach(([posMask, posField]) => {
+      const guessSet = guesses.get(posMask)
+      const guessesArray = guessSet ? Array.from(guessSet) : []
+      const isCorrect = revealedMasks.has(posMask) ? 1 : 0
+      const scoreBeforeGuess = scorePerPos.get(posMask) ?? null
 
-        posData[`${posField}_correct`] = isCorrect
-        posData[`${posField}_score_before_guess`] = isCorrect ? scoreBeforeGuess : null
-        posData[`${posField}_guesses`] = guessesArray.join(';') // Join guesses with semicolon
-      }
+      posData[`${posField}_correct`] = isCorrect
+      posData[`${posField}_score_before_guess`] = isCorrect ? scoreBeforeGuess : null
+      posData[`${posField}_guesses`] = guessesArray.length > 0 ? guessesArray.join(';') : null
     })
 
     // Also include guesses in legacy format
@@ -463,7 +461,27 @@ export default function Game() {
               </Box>
 
               {/* Timer and controls - now only button */}
-              <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+                {!isRevealed && (
+                  <Button
+                    variant="outlined"
+                    onClick={() => setTimeRemaining(0)}
+                    sx={{
+                      borderColor: '#d32f2f',
+                      color: '#d32f2f',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      '&:hover': {
+                        backgroundColor: '#d32f2f',
+                        color: '#ffffff',
+                      },
+                    }}
+                  >
+                    I Give Up
+                  </Button>
+                )}
                 <Button
                   variant="outlined"
                   onClick={handleNewGame}

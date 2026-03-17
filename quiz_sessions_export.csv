@@ -1,0 +1,2 @@
+id,quiz_id,user_id,score,created_at,ended_at,adj_score_before_guess,adj_correct,adj_guesses,func_score_before_guess,func_correct,func_guesses,noun_score_before_guess,noun_correct,noun_guesses,num_score_before_guess,num_correct,num_guesses,propn_score_before_guess,propn_correct,propn_guesses,verb_score_before_guess,verb_correct,verb_guesses
+1,aacb0878-720a-4780-9606-aed58b729b2e,1,200,1773784138421,1773784183421,0,1,,,0,,100,1,,,0,,,0,,100,0,
