@@ -23,11 +23,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem(CONFIG_STORAGE_KEY)
     if (stored) {
       try {
-        return { ...defaultConfig, ...JSON.parse(stored) }
-      } catch (e) {
-        // Clear corrupted localStorage data and start fresh
-        localStorage.removeItem(CONFIG_STORAGE_KEY)
-        console.warn('Config storage was corrupted, reset to defaults')
+        return { ...defaultConfig, ...JSON.parse(stored), timerDuration: defaultConfig.timerDuration }
+      } catch {
         return defaultConfig
       }
     }
@@ -39,7 +36,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   }, [config])
 
   const updateConfig = () => {
-    // Timer is now fixed at 180 seconds, ignore any update attempts
+    // Timer is now fixed at 120 seconds, ignore any update attempts
     // This ensures the timer cannot be changed
   }
 
