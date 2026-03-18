@@ -22,6 +22,15 @@ const pool = new pg.Pool({
 async function exportQuizSessionsToCSV() {
   try {
     console.log('Fetching quiz sessions data...')
+    const scoreColumns = new Set([
+      'adj_score_before_guess',
+      'func_score_before_guess',
+      'noun_score_before_guess',
+      'num_score_before_guess',
+      'propn_score_before_guess',
+      'verb_score_before_guess',
+    ])
+
     const result = await pool.query(`
       SELECT 
         id,
@@ -87,8 +96,11 @@ async function exportQuizSessionsToCSV() {
     ]
 
     // Helper function to escape CSV values
-    const escapeCSV = (value) => {
+    const escapeCSV = (value, header) => {
       if (value === null || value === undefined) {
+        if (scoreColumns.has(header)) {
+          return 'NA'
+        }
         return ''
       }
       const str = String(value)
@@ -102,7 +114,7 @@ async function exportQuizSessionsToCSV() {
     let csvContent = headers.join(',') + '\n'
 
     result.rows.forEach((row) => {
-      const values = headers.map((header) => escapeCSV(row[header]))
+      const values = headers.map((header) => escapeCSV(row[header], header))
       csvContent += values.join(',') + '\n'
     })
 

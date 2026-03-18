@@ -22,6 +22,15 @@ const pool = new pg.Pool({
 async function exportToExcel() {
   try {
     console.log('Fetching latest quiz sessions...')
+    const scoreColumns = new Set([
+      'adj_score_before_guess',
+      'func_score_before_guess',
+      'noun_score_before_guess',
+      'num_score_before_guess',
+      'propn_score_before_guess',
+      'verb_score_before_guess',
+    ])
+
     const result = await pool.query(`
       SELECT 
         id,
@@ -62,8 +71,20 @@ async function exportToExcel() {
     // Try to use xlsx if available, otherwise create CSV
     try {
       const XLSX = await import('xlsx')
-      
-      const ws = XLSX.utils.json_to_sheet(result.rows)
+
+      const normalizedRows = result.rows.map((row) => {
+        const normalizedRow = { ...row }
+
+        scoreColumns.forEach((column) => {
+          if (normalizedRow[column] === null || normalizedRow[column] === undefined) {
+            normalizedRow[column] = 'NA'
+          }
+        })
+
+        return normalizedRow
+      })
+
+      const ws = XLSX.utils.json_to_sheet(normalizedRows)
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Quiz Sessions')
       
@@ -87,8 +108,13 @@ async function exportToExcel() {
         'verb_score_before_guess', 'verb_correct', 'verb_guesses',
       ]
 
-      const escapeCSV = (value) => {
-        if (value === null || value === undefined) return ''
+      const escapeCSV = (value, header) => {
+        if (value === null || value === undefined) {
+          if (scoreColumns.has(header)) {
+            return 'NA'
+          }
+          return ''
+        }
         const str = String(value)
         if (str.includes(',') || str.includes('"') || str.includes('\n')) {
           return `"${str.replace(/"/g, '""')}"`
@@ -98,7 +124,7 @@ async function exportToExcel() {
 
       let csvContent = headers.join(',') + '\n'
       result.rows.forEach((row) => {
-        const values = headers.map((header) => escapeCSV(row[header]))
+        const values = headers.map((header) => escapeCSV(row[header], header))
         csvContent += values.join(',') + '\n'
       })
 
