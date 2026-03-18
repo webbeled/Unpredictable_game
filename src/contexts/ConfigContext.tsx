@@ -11,7 +11,7 @@ interface ConfigContextType {
 }
 
 const defaultConfig: Config = {
-  timerDuration: 180,
+  timerDuration: 120,
 }
 
 const CONFIG_STORAGE_KEY = 'redactle-config'
@@ -23,7 +23,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem(CONFIG_STORAGE_KEY)
     if (stored) {
       try {
-        return { ...defaultConfig, ...JSON.parse(stored) }
+        return { ...defaultConfig, ...JSON.parse(stored), timerDuration: defaultConfig.timerDuration }
       } catch {
         return defaultConfig
       }
@@ -36,7 +36,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   }, [config])
 
   const updateConfig = () => {
-    // Timer is now fixed at 180 seconds, ignore any update attempts
+    // Timer is now fixed at 120 seconds, ignore any update attempts
     // This ensures the timer cannot be changed
   }
 

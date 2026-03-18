@@ -188,11 +188,21 @@ function StatsSection() {
   const best = Math.max(...sessions.map((s) => s.score))
   const total = sessions.length
   const average = Math.round((sessions.reduce((sum, s) => sum + s.score, 0) / sessions.length) * 10) / 10
+  const bucketCount = Math.min(5, total)
+  const chartData = Array.from({ length: bucketCount }, (_, bucketIndex) => {
+    const startIndex = Math.floor((bucketIndex * total) / bucketCount)
+    const endIndex = Math.floor(((bucketIndex + 1) * total) / bucketCount)
+    const bucketSessions = sessions.slice(startIndex, endIndex)
+    const bucketAverage = bucketSessions.reduce((sum, session) => sum + session.score, 0) / bucketSessions.length
+    const startGame = startIndex + 1
+    const endGame = endIndex
 
-  const chartData = sessions.map((s, index) => ({
-    gameNumber: index + 1,
-    score: s.score,
-  }))
+    return {
+      gameRange: startGame === endGame ? `${startGame}` : `${startGame}-${endGame}`,
+      gamesLabel: startGame === endGame ? `Game ${startGame}` : `Games ${startGame}-${endGame}`,
+      score: Math.round(bucketAverage * 10) / 10,
+    }
+  })
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -307,7 +317,7 @@ function StatsSection() {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
             <XAxis
-              dataKey="gameNumber"
+              dataKey="gameRange"
               tick={{ fontSize: 9, fill: '#888' }}
               tickLine={false}
               axisLine={false}
