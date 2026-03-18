@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
 set -e
 
-APP_DIR="$HOME/project/Unpredictable_game"
+REMOTE_HOST="okearey@newsgap.huma-num.fr"
+
+ssh -t "$REMOTE_HOST" <<'EOF'
+set -e
+
+APP_DIR="$HOME/Unpredictable_game"
 
 echo "=== Go to project ==="
 cd "$APP_DIR"
 
 echo "=== Pull latest code ==="
-git pull
+git fetch origin
+git reset --hard origin/main
 
 echo "=== Load Node ==="
 export NVM_DIR="$HOME/.nvm"
@@ -21,12 +27,13 @@ echo "=== Build frontend ==="
 npm run build
 
 echo "=== Deploy frontend ==="
-ssh okearey@newsgap.huma-num.fr 'sudo rsync -a --delete /home/okearey/Unpredictable_game/dist/ /var/www/newsgap/'
+sudo rsync -a --delete dist/ /var/www/newsgap/
 
 echo "=== Restart backend ==="
-ssh okearey@newsgap.huma-num.fr 'sudo systemctl restart newsgap'
+sudo systemctl restart newsgap
 
 echo "=== Reload nginx ==="
-ssh okearey@newsgap.huma-num.fr 'sudo systemctl reload nginx'
+sudo systemctl reload nginx
 
 echo "✅ Deployment complete"
+EOF
