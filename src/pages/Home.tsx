@@ -166,6 +166,40 @@ function AnimatedNewspaper() {
   )
 }
 
+function downloadSessionsAsCSV(sessions: QuizSession[]) {
+  const headers = ['Quiz ID', 'Score', 'Game #', 'Date', 'Time Ended']
+  const rows = sessions.map((session, index) => {
+    const createdDate = new Date(typeof session.created_at === 'string' ? parseInt(session.created_at) : session.created_at)
+    const endedDate = session.ended_at ? new Date(typeof session.ended_at === 'string' ? parseInt(session.ended_at) : session.ended_at) : null
+    
+    return [
+      session.quiz_id,
+      session.score,
+      sessions.length - index,
+      createdDate.toLocaleDateString(),
+      endedDate ? endedDate.toLocaleTimeString() : '',
+    ]
+  })
+
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => {
+      const str = String(cell)
+      return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str
+    }).join(',')),
+  ].join('\n')
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  link.setAttribute('href', url)
+  link.setAttribute('download', `quiz-sessions-${new Date().toISOString().split('T')[0]}.csv`)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 function StatsSection() {
   const { data: sessions, isLoading } = useUserStats()
 
@@ -334,18 +368,34 @@ function StatsSection() {
           boxShadow: 'none',
         }}
       >
-        <Typography
-          sx={{
-            fontFamily: 'Cormorant Garamond, serif',
-            fontSize: '12px',
-            color: '#666',
-            mb: 1.5,
-            letterSpacing: '1px',
-            textTransform: 'uppercase',
-          }}
-        >
-          Score Trend
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+          <Typography
+            sx={{
+              fontFamily: 'Cormorant Garamond, serif',
+              fontSize: '12px',
+              color: '#666',
+              letterSpacing: '1px',
+              textTransform: 'uppercase',
+            }}
+          >
+            Score Trend
+          </Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => downloadSessionsAsCSV(sessions)}
+            sx={{
+              fontSize: '10px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              borderColor: '#ddd',
+              color: '#666',
+              '&:hover': { borderColor: '#000', color: '#000', backgroundColor: '#fafafa' },
+            }}
+          >
+            Download CSV
+          </Button>
+        </Box>
         <ResponsiveContainer width="100%" height={100}>
           <AreaChart data={chartData} margin={{ top: 2, right: 8, left: -20, bottom: 0 }}>
             <defs>

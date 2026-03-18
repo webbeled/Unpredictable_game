@@ -20,6 +20,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    // Clear any corrupted localStorage data
+    try {
+      const keys = Object.keys(localStorage)
+      for (const key of keys) {
+        try {
+          const value = localStorage.getItem(key)
+          if (value) JSON.parse(value)
+        } catch (e) {
+          console.warn(`Clearing corrupted localStorage key: ${key}`)
+          localStorage.removeItem(key)
+        }
+      }
+    } catch (e) {
+      console.warn('Error clearing localStorage:', e)
+    }
+
     fetch('/api/auth/me', { credentials: 'include' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => setUser(data))
