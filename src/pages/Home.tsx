@@ -189,10 +189,29 @@ function StatsSection() {
   const total = sessions.length
   const average = Math.round((sessions.reduce((sum, s) => sum + s.score, 0) / sessions.length) * 10) / 10
 
-  const chartData = sessions.map((s, index) => ({
-    gameNumber: index + 1,
-    score: s.score,
-  }))
+  // Smart binning: if <10 games show each, otherwise average by bins
+  const chartData = (() => {
+    if (total <= 10) {
+      return sessions.map((s, index) => ({
+        gameNumber: index + 1,
+        score: s.score,
+      }))
+    }
+    
+    // Determine bin size: show ~10-15 data points
+    const binSize = Math.ceil(total / 12)
+    const bins: Array<{ gameNumber: number; score: number }> = []
+    
+    for (let i = 0; i < total; i += binSize) {
+      const binEnd = Math.min(i + binSize, total)
+      const binSessions = sessions.slice(i, binEnd)
+      const avgScore = Math.round(binSessions.reduce((sum, s) => sum + s.score, 0) / binSessions.length)
+      const gameNumber = Math.ceil((i + binEnd) / 2) // midpoint of bin
+      bins.push({ gameNumber, score: avgScore })
+    }
+    
+    return bins
+  })()
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -260,6 +279,36 @@ function StatsSection() {
             py: 1.5,
             borderRadius: 0,
             background: '#fff',
+[0] Error [TransformError]: Transform failed with 1 error:
+[0] /home/owenk/project/Unpredictable_game/server/odsLoader.ts:1:13: ERROR: Expected ";" but found "XLSX"
+[0]     at failureErrorWithLog (/home/owenk/project/Unpredictable_game/node_modules/esbuild/lib/main.js:1467:15)
+[0]     at /home/owenk/project/Unpredictable_game/node_modules/esbuild/lib/main.js:736:50
+[0]     at responseCallbacks.<computed> (/home/owenk/project/Unpredictable_game/node_modules/esbuild/lib/main.js:603:9)
+[0]     at handleIncomingPacket (/home/owenk/project/Unpredictable_game/node_modules/esbuild/lib/main.js:658:12)
+[0]     at Socket.readFromStdout (/home/owenk/project/Unpredictable_game/node_modules/esbuild/lib/main.js:581:7)
+[0]     at Socket.emit (node:events:507:28)
+[0]     at addChunk (node:internal/streams/readable:559:12)
+[0]     at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+[0]     at Readable.push (node:internal/streams/readable:390:5)
+[0]     at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+[0] 
+[0] Node.js v23.11.1
+[1] 2:23:45 AM [vite] http proxy error: /api/auth/me
+[1] Error: connect ECONNREFUSED 127.0.0.1:3001
+[1]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1636:16)
+[1] 2:23:45 AM [vite] http proxy error: /api/auth/me
+[1] Error: connect ECONNREFUSED 127.0.0.1:3001
+[1]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1636:16)
+[1] 2:23:56 AM [vite] http proxy error: /api/auth/login
+[1] Error: connect ECONNREFUSED 127.0.0.1:3001
+[1]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1636:16)
+[1] 2:24:00 AM [vite] http proxy error: /api/auth/register
+[1] Error: connect ECONNREFUSED 127.0.0.1:3001
+[1]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1636:16)
+[1] 2:24:00 AM [vite] http proxy error: /api/auth/register
+[1] Error: connect ECONNREFUSED 127.0.0.1:3001
+[1]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1636:16)
+
             border: '1px solid #ddd',
             boxShadow: 'none',
             textAlign: 'center',

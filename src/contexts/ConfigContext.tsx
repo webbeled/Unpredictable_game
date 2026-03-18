@@ -11,7 +11,7 @@ interface ConfigContextType {
 }
 
 const defaultConfig: Config = {
-  timerDuration: 180,
+  timerDuration: 120,
 }
 
 const CONFIG_STORAGE_KEY = 'redactle-config'
@@ -24,7 +24,10 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     if (stored) {
       try {
         return { ...defaultConfig, ...JSON.parse(stored) }
-      } catch {
+      } catch (e) {
+        // Clear corrupted localStorage data and start fresh
+        localStorage.removeItem(CONFIG_STORAGE_KEY)
+        console.warn('Config storage was corrupted, reset to defaults')
         return defaultConfig
       }
     }
