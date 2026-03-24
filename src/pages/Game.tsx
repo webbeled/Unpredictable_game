@@ -24,6 +24,36 @@ const MASK_LABELS: Record<string, string> = {
   '6666': 'Verbs',
 }
 
+// Sleek success chime using Web Audio API — no external files needed
+// Pitch rises slightly with each correct answer (score / 100 = number of correct guesses)
+function playSuccessSound(currentScore: number) {
+  try {
+    const ctx = new AudioContext()
+    const now = ctx.currentTime
+
+    // Start a bit lower than C5/E5, then nudge up ~8 Hz per correct answer
+    const step = currentScore / 100 // 0 for first correct, 1 for second, etc.
+    const baseFreqs = [493.88, 622.25] // B4, D#5 — slightly below the old C5/E5
+    const frequencies = baseFreqs.map((f) => f + step * 8)
+
+    frequencies.forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.value = freq
+      gain.gain.setValueAtTime(0, now + i * 0.08)
+      gain.gain.linearRampToValueAtTime(0.15, now + i * 0.08 + 0.04)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.4)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(now + i * 0.08)
+      osc.stop(now + i * 0.08 + 0.4)
+    })
+  } catch {
+    // Audio not available — silently ignore
+  }
+}
+
 export default function Game() {
   const { config } = useConfig()
   const queryClient = useQueryClient()
@@ -39,6 +69,9 @@ export default function Game() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [answerData, setAnswerData] = useState<any>(null)
   const [scorePerPos, setScorePerPos] = useState<Map<string, number>>(new Map())
+  const [scoreBumpKey, setScoreBumpKey] = useState(0)
+  const [encouragement, setEncouragement] = useState<{ text: string; color: string } | null>(null)
+  const [scoreFinalized, setScoreFinalized] = useState(false)
 
   const { data: randomEntry, isLoading, error, refetch } = useQuiz()
 
@@ -61,6 +94,25 @@ export default function Game() {
       sessionSaved.current = false
     }
   }, [randomEntry?.id])
+
+  // End the game if the user leaves the page (tab switch / minimize)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTimeRemaining(0)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
+  // On unmount (navigating away): save session and clear quiz cache so next visit gets a new article
+  useEffect(() => {
+    return () => {
+      saveQuizSessionRef.current(Date.now())
+      queryClient.removeQueries({ queryKey: ['quiz'] })
+    }
+  }, [queryClient])
 
   const saveQuizSessionRef = useRef<(endedAt: number) => void>(() => {})
   saveQuizSessionRef.current = (endedAt: number) => {
@@ -119,6 +171,8 @@ export default function Game() {
   useEffect(() => {
     if (isRevealed) {
       saveQuizSessionRef.current(Date.now())
+      const t = setTimeout(() => setScoreFinalized(true), 400)
+      return () => clearTimeout(t)
     }
   }, [isRevealed])
 
@@ -174,6 +228,7 @@ export default function Game() {
   const handleNewGame = () => {
     try {
       saveQuizSessionRef.current(Date.now())
+      queryClient.removeQueries({ queryKey: ['quiz'] })
       refetch()
       setGuesses(new Map())
       setGuess('')
@@ -181,6 +236,7 @@ export default function Game() {
       setScorePerPos(new Map())
       setTimeRemaining(config.timerDuration)
       setIsRevealed(false)
+      setScoreFinalized(false)
       setSuccessMessage(null)
       setAnswerData(null)
       setScore(0)
@@ -261,7 +317,26 @@ export default function Game() {
         })
 
         // Award 100 points for correct guess
-        setScore((prev) => prev + 100)
+        const newScore = score + 100
+        setScore(newScore)
+        setScoreBumpKey((k) => k + 1)
+        playSuccessSound(score)
+
+        // Show encouragement based on new score
+        const messages: Record<number, string> = {
+          100: 'Nice!',
+          200: 'Good work!',
+          300: 'Great!',
+          400: 'Awesome!',
+          500: 'Almost there!',
+          600: 'Perfect!',
+        }
+        const msg = messages[newScore]
+        if (msg) {
+          const maskColor = MASK_COLORS[result.mask as keyof typeof MASK_COLORS] || '#4caf50'
+          setEncouragement({ text: msg, color: maskColor })
+          setTimeout(() => setEncouragement(null), 1500)
+        }
 
         // Add the revealed mask
         const newRevealedMasks = new Map(revealedMasks)
@@ -386,9 +461,88 @@ export default function Game() {
               }}
             >
               {/* Newspaper masthead */}
-              <Box sx={{ textAlign: 'center', mb: 2, pb: 1.5, borderBottom: '2px solid #000000' }}>
+              <Box sx={{ textAlign: 'center', mb: 2, pb: 1.5, borderBottom: '2px solid #000000', position: 'relative' }}>
+                {/* Score - Top Right */}
+                <Box sx={{ position: 'absolute', top: 8, right: 16, zIndex: 2, minWidth: 80, textAlign: 'right' }}>
+                  {score !== undefined && (
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontSize: '0.7rem',
+                          letterSpacing: '0.1em',
+                          color: '#666666',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          transition: 'all 0.6s ease 0.3s',
+                          ...(scoreFinalized && {
+                            letterSpacing: '0.15em',
+                            color: '#999',
+                          }),
+                        }}
+                      >
+                        {scoreFinalized ? 'Final' : 'Score'}
+                      </Typography>
+                      <Typography
+                        key={scoreBumpKey}
+                        sx={{
+                          fontSize: scoreFinalized ? '1.75rem' : '1.4rem',
+                          fontWeight: 900,
+                          color: '#000000',
+                          fontFamily: 'monospace',
+                          display: 'inline-block',
+                          transition: 'font-size 0.7s cubic-bezier(.22,.68,.36,1)',
+                          ...(scoreBumpKey > 0 && !scoreFinalized && {
+                            animation: 'score-bump 0.6s cubic-bezier(.22,.68,.36,1)',
+                          }),
+                          ...(scoreFinalized && {
+                            animation: 'score-land 0.45s cubic-bezier(.22,.68,.36,1) 0.75s both',
+                          }),
+                          '@keyframes score-bump': {
+                            '0%': { transform: 'scale(1)', color: '#000000' },
+                            '20%': { transform: 'scale(1.4)', color: '#4caf50' },
+                            '50%': { transform: 'scale(0.95)', color: '#388e3c' },
+                            '75%': { transform: 'scale(1.05)', color: '#66bb6a' },
+                            '100%': { transform: 'scale(1)', color: '#000000' },
+                          },
+                          '@keyframes score-land': {
+                            '0%': { transform: 'scale(1)' },
+                            '45%': { transform: 'scale(1.18)' },
+                            '75%': { transform: 'scale(0.96)' },
+                            '100%': { transform: 'scale(1)' },
+                          },
+                        }}
+                      >
+                        {score}
+                      </Typography>
+                      {encouragement && (
+                        <Typography
+                          sx={{
+                            mt: 0.5,
+                            fontFamily: '"Didot", "Playfair Display", Georgia, serif',
+                            fontSize: '1.1rem',
+                            fontWeight: 700,
+                            fontStyle: 'italic',
+                            color: encouragement.color,
+                            pointerEvents: 'none',
+                            whiteSpace: 'nowrap',
+                            animation: 'fadeInOut 1.5s ease-in-out',
+                            '@keyframes fadeInOut': {
+                              '0%': { opacity: 0, transform: 'translateY(4px)' },
+                              '15%': { opacity: 1, transform: 'translateY(0)' },
+                              '70%': { opacity: 1, transform: 'translateY(0)' },
+                              '100%': { opacity: 0, transform: 'translateY(0)' },
+                            },
+                          }}
+                        >
+                          {encouragement.text}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+
                 {/* Center - Title */}
-                <Box sx={{ textAlign: 'center' }}>
+                <Box sx={{ textAlign: 'center', position: 'relative', minHeight: 70 }}>
                   <Typography
                     sx={{
                       fontFamily: '"Cormorant Garamond", Georgia, serif',
@@ -424,39 +578,11 @@ export default function Game() {
                       letterSpacing: '0.1em',
                       color: timeRemaining <= 10 ? '#d32f2f' : '#666666',
                       textTransform: 'uppercase',
+                      zIndex: 1,
                     }}
                   >
                     {formatTime(timeRemaining)}
                   </Typography>
-                </Box>
-
-                {/* Right - Score */}
-                <Box sx={{ width: 80, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1.5 }}>
-                  {score !== undefined && (
-                    <Box sx={{ textAlign: 'right' }}>
-                      <Typography
-                        sx={{
-                          fontSize: '0.7rem',
-                          letterSpacing: '0.1em',
-                          color: '#666666',
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        Score
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontSize: '1.4rem',
-                          fontWeight: 900,
-                          color: '#000000',
-                          fontFamily: 'monospace',
-                        }}
-                      >
-                        {score}
-                      </Typography>
-                    </Box>
-                  )}
                 </Box>
               </Box>
 
