@@ -1,3 +1,44 @@
+// Helper to build quiz session payload with freshest values
+function buildQuizSessionPayload({
+  quizId,
+  score,
+  guesses,
+  revealedMasks,
+  startedAt,
+  endedAt,
+  scorePerPos,
+}) {
+  // Map POS codes to field names
+  const posMap = {
+    '1111': 'adj',
+    '2222': 'func',
+    '3333': 'noun',
+    '4444': 'num',
+    '5555': 'propn',
+    '6666': 'verb',
+  }
+  const posData = {}
+  Object.entries(posMap).forEach(([posMask, posField]) => {
+    const guessSet = guesses.get(posMask)
+    const guessesArray = guessSet ? Array.from(guessSet) : []
+    const isCorrect = revealedMasks.has(posMask) ? 1 : 0
+    const scoreBeforeGuess = scorePerPos.get(posMask) ?? null
+    posData[`${posField}_correct`] = isCorrect
+    posData[`${posField}_score_before_guess`] = isCorrect ? scoreBeforeGuess : null
+    posData[`${posField}_guesses`] = guessesArray.length > 0 ? guessesArray.join(';') : null
+  })
+  const guessedWords = Array.from(guesses.entries()).flatMap(([partOfSpeech, words]) =>
+    Array.from(words).map((word) => ({ word, part_of_speech: partOfSpeech }))
+  )
+  return {
+    quiz_id: quizId,
+    score,
+    guessed_words: guessedWords,
+    ended_at: endedAt,
+    created_at: startedAt,
+    ...posData,
+  }
+}
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Container, Box, Typography, Button, Alert, CircularProgress, TextField, Chip, Stack, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material'
@@ -348,8 +389,29 @@ export default function Game() {
 
         // Check if all masks are revealed
         if (newRevealedMasks.size >= totalMasks) {
+          // Snapshot freshest local values
+          const payload = buildQuizSessionPayload({
+            quizId: randomEntry.id,
+            score: newScore,
+            guesses: new Map(newGuesses),
+            revealedMasks: new Map(newRevealedMasks),
+            startedAt: quizStartedAt.current,
+            endedAt: Date.now(),
+            scorePerPos: new Map(scorePerPos),
+          })
           setIsRevealed(true)
           setSuccessMessage(`Congratulations! You guessed all the words!`)
+          // Save session immediately with freshest values
+          fetch('/api/quiz-sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload),
+          })
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ['quiz-sessions'] })
+            })
+            .catch((err) => console.error('Failed to save quiz session:', err))
           // Fetch the full answer data
           fetchAnswer().then((answerResult) => {
             if (answerResult.data) {
