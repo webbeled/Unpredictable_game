@@ -91,6 +91,7 @@ export default function Game() {
     if (randomEntry?.id) {
       quizStartedAt.current = Date.now()
       sessionSaved.current = false
+      finalSessionPayloadRef.current = null
     }
   }, [randomEntry?.id])
 
@@ -113,12 +114,24 @@ export default function Game() {
     }
   }, [queryClient])
 
-  const saveQuizSessionRef = useRef<(endedAt: number) => void>(() => {})
-  saveQuizSessionRef.current = (endedAt: number) => {
-    if (sessionSaved.current || !randomEntry?.id) return
-    sessionSaved.current = true
+  const finalSessionPayloadRef = useRef<any>(null)
 
-    // Map POS codes to field names
+  function buildQuizSessionPayload(
+    endedAt: number,
+    overrides?: {
+      score?: number
+      guesses?: Map<string, Set<string>>
+      revealedMasks?: Map<string, string>
+      scorePerPos?: Map<string, number>
+    }
+  ) {
+    if (!randomEntry?.id) return null
+
+    const effectiveScore = overrides?.score ?? score
+    const effectiveGuesses = overrides?.guesses ?? guesses
+    const effectiveRevealedMasks = overrides?.revealedMasks ?? revealedMasks
+    const effectiveScorePerPos = overrides?.scorePerPos ?? scorePerPos
+
     const posMap: Record<string, string> = {
       '1111': 'adj',
       '2222': 'func',
@@ -128,39 +141,48 @@ export default function Game() {
       '6666': 'verb',
     }
 
-    // Build the data structure for EACH POS (including those not guessed)
     const posData: Record<string, any> = {}
+
     Object.entries(posMap).forEach(([posMask, posField]) => {
-      const guessSet = guesses.get(posMask)
+      const guessSet = effectiveGuesses.get(posMask)
       const guessesArray = guessSet ? Array.from(guessSet) : []
-      const isCorrect = revealedMasks.has(posMask) ? 1 : 0
-      const scoreBeforeGuess = scorePerPos.get(posMask) ?? null
+      const isCorrect = effectiveRevealedMasks.has(posMask) ? 1 : 0
+      const scoreBeforeGuess = effectiveScorePerPos.get(posMask) ?? null
 
       posData[`${posField}_correct`] = isCorrect
       posData[`${posField}_score_before_guess`] = isCorrect ? scoreBeforeGuess : null
       posData[`${posField}_guesses`] = guessesArray.length > 0 ? guessesArray.join(';') : null
     })
 
-    // Also include guesses in legacy format
-    const guessedWords = Array.from(guesses.entries()).flatMap(([partOfSpeech, words]) =>
+    const guessedWords = Array.from(effectiveGuesses.entries()).flatMap(([partOfSpeech, words]) =>
       Array.from(words).map((word) => ({ word, part_of_speech: partOfSpeech }))
     )
+
+    return {
+      quiz_id: randomEntry.id,
+      score: effectiveScore,
+      guessed_words: guessedWords,
+      ended_at: endedAt,
+      created_at: quizStartedAt.current,
+      ...posData,
+    }
+  }
+
+  const saveQuizSessionRef = useRef<(endedAt: number) => void>(() => {})
+  saveQuizSessionRef.current = (endedAt: number) => {
+    if (sessionSaved.current || !randomEntry?.id) return
+    sessionSaved.current = true
+
+    const payload = finalSessionPayloadRef.current ?? buildQuizSessionPayload(endedAt)
+    if (!payload) return
 
     fetch('/api/quiz-sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({
-        quiz_id: randomEntry.id,
-        score,
-        guessed_words: guessedWords,
-        ended_at: endedAt,
-        created_at: quizStartedAt.current,
-        ...posData,
-      }),
+      body: JSON.stringify(payload),
     })
       .then(() => {
-        // Invalidate the quiz-sessions cache so the home page shows updated stats
         queryClient.invalidateQueries({ queryKey: ['quiz-sessions'] })
       })
       .catch((err) => console.error('Failed to save quiz session:', err))
@@ -240,6 +262,7 @@ export default function Game() {
       setAnswerData(null)
       setScore(0)
       setSelectedMask(null)
+      finalSessionPayloadRef.current = null
       answerFetchedRef.current = false
     } catch (err) {
       console.error('Error starting new game:', err)
@@ -331,9 +354,15 @@ export default function Game() {
 
         // Check if all masks are revealed
         if (newRevealedMasks.size >= totalMasks) {
+          finalSessionPayloadRef.current = buildQuizSessionPayload(Date.now(), {
+            score: newScore,
+            guesses: newGuesses,
+            revealedMasks: newRevealedMasks,
+          })
+
           setIsRevealed(true)
           setSuccessMessage(`Congratulations! You guessed all the words!`)
-          // Fetch the full answer data
+
           fetchAnswer().then((answerResult) => {
             if (answerResult.data) {
               setAnswerData(answerResult.data)
