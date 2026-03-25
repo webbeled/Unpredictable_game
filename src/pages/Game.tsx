@@ -274,6 +274,7 @@ export default function Game() {
     if (isRevealed) return
 
     if (timeRemaining <= 0) {
+      finalSessionPayloadRef.current = buildQuizSessionPayload(Date.now())
       setIsRevealed(true)
       return
     }
@@ -283,6 +284,7 @@ export default function Game() {
         const newTime = prev - 1
         if (newTime <= 0) {
           clearInterval(timer)
+          finalSessionPayloadRef.current = buildQuizSessionPayload(Date.now())
           setIsRevealed(true)
           return 0
         }
@@ -291,7 +293,7 @@ export default function Game() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [isRevealed])
+  }, [isRevealed, timeRemaining])
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
