@@ -337,6 +337,7 @@ function StatsSection() {
               tickLine={false}
               axisLine={false}
               domain={[0, 600]}
+              ticks={[0, 100, 200, 300, 400, 500, 600]}
             />
             <Tooltip
               contentStyle={{
@@ -345,7 +346,9 @@ function StatsSection() {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 fontSize: 11,
               }}
-              formatter={(value) => [String(value), 'Score']}
+              formatter={(value, name) =>
+                [String(value), name === 'rating' ? 'Score' : 'Game Score']
+              }
               labelFormatter={(_label, payload) => {
                 const item = payload?.[0]?.payload as { date?: string } | undefined
                 return item?.date ?? ''
@@ -360,7 +363,6 @@ function StatsSection() {
               fill="url(#ratingGrad)"
               dot={false}
               activeDot={{ r: 4, strokeWidth: 0, fill: '#000' }}
-              tooltipType="none"
             />
             <Area
               type="monotone"

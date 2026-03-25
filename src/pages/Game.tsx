@@ -1,44 +1,3 @@
-// Helper to build quiz session payload with freshest values
-function buildQuizSessionPayload({
-  quizId,
-  score,
-  guesses,
-  revealedMasks,
-  startedAt,
-  endedAt,
-  scorePerPos,
-}) {
-  // Map POS codes to field names
-  const posMap = {
-    '1111': 'adj',
-    '2222': 'func',
-    '3333': 'noun',
-    '4444': 'num',
-    '5555': 'propn',
-    '6666': 'verb',
-  }
-  const posData = {}
-  Object.entries(posMap).forEach(([posMask, posField]) => {
-    const guessSet = guesses.get(posMask)
-    const guessesArray = guessSet ? Array.from(guessSet) : []
-    const isCorrect = revealedMasks.has(posMask) ? 1 : 0
-    const scoreBeforeGuess = scorePerPos.get(posMask) ?? null
-    posData[`${posField}_correct`] = isCorrect
-    posData[`${posField}_score_before_guess`] = isCorrect ? scoreBeforeGuess : null
-    posData[`${posField}_guesses`] = guessesArray.length > 0 ? guessesArray.join(';') : null
-  })
-  const guessedWords = Array.from(guesses.entries()).flatMap(([partOfSpeech, words]) =>
-    Array.from(words).map((word) => ({ word, part_of_speech: partOfSpeech }))
-  )
-  return {
-    quiz_id: quizId,
-    score,
-    guessed_words: guessedWords,
-    ended_at: endedAt,
-    created_at: startedAt,
-    ...posData,
-  }
-}
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Container, Box, Typography, Button, Alert, CircularProgress, TextField, Chip, Stack, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material'
@@ -389,29 +348,8 @@ export default function Game() {
 
         // Check if all masks are revealed
         if (newRevealedMasks.size >= totalMasks) {
-          // Snapshot freshest local values
-          const payload = buildQuizSessionPayload({
-            quizId: randomEntry.id,
-            score: newScore,
-            guesses: new Map(newGuesses),
-            revealedMasks: new Map(newRevealedMasks),
-            startedAt: quizStartedAt.current,
-            endedAt: Date.now(),
-            scorePerPos: new Map(scorePerPos),
-          })
           setIsRevealed(true)
           setSuccessMessage(`Congratulations! You guessed all the words!`)
-          // Save session immediately with freshest values
-          fetch('/api/quiz-sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(payload),
-          })
-            .then(() => {
-              queryClient.invalidateQueries({ queryKey: ['quiz-sessions'] })
-            })
-            .catch((err) => console.error('Failed to save quiz session:', err))
           // Fetch the full answer data
           fetchAnswer().then((answerResult) => {
             if (answerResult.data) {
@@ -524,87 +462,8 @@ export default function Game() {
             >
               {/* Newspaper masthead */}
               <Box sx={{ textAlign: 'center', mb: 2, pb: 1.5, borderBottom: '2px solid #000000', position: 'relative' }}>
-                {/* Score - Top Right */}
-                <Box sx={{ position: 'absolute', top: 8, right: 16, zIndex: 2, minWidth: 80, textAlign: 'right' }}>
-                  {score !== undefined && (
-                    <Box>
-                      <Typography
-                        sx={{
-                          fontSize: '0.7rem',
-                          letterSpacing: '0.1em',
-                          color: '#666666',
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          transition: 'all 0.6s ease 0.3s',
-                          ...(scoreFinalized && {
-                            letterSpacing: '0.15em',
-                            color: '#999',
-                          }),
-                        }}
-                      >
-                        {scoreFinalized ? 'Final' : 'Score'}
-                      </Typography>
-                      <Typography
-                        key={scoreBumpKey}
-                        sx={{
-                          fontSize: scoreFinalized ? '1.75rem' : '1.4rem',
-                          fontWeight: 900,
-                          color: '#000000',
-                          fontFamily: 'monospace',
-                          display: 'inline-block',
-                          transition: 'font-size 0.7s cubic-bezier(.22,.68,.36,1)',
-                          ...(scoreBumpKey > 0 && !scoreFinalized && {
-                            animation: 'score-bump 0.6s cubic-bezier(.22,.68,.36,1)',
-                          }),
-                          ...(scoreFinalized && {
-                            animation: 'score-land 0.45s cubic-bezier(.22,.68,.36,1) 0.75s both',
-                          }),
-                          '@keyframes score-bump': {
-                            '0%': { transform: 'scale(1)', color: '#000000' },
-                            '20%': { transform: 'scale(1.4)', color: '#4caf50' },
-                            '50%': { transform: 'scale(0.95)', color: '#388e3c' },
-                            '75%': { transform: 'scale(1.05)', color: '#66bb6a' },
-                            '100%': { transform: 'scale(1)', color: '#000000' },
-                          },
-                          '@keyframes score-land': {
-                            '0%': { transform: 'scale(1)' },
-                            '45%': { transform: 'scale(1.18)' },
-                            '75%': { transform: 'scale(0.96)' },
-                            '100%': { transform: 'scale(1)' },
-                          },
-                        }}
-                      >
-                        {score}
-                      </Typography>
-                      {encouragement && (
-                        <Typography
-                          sx={{
-                            mt: 0.5,
-                            fontFamily: '"Didot", "Playfair Display", Georgia, serif',
-                            fontSize: '1.1rem',
-                            fontWeight: 700,
-                            fontStyle: 'italic',
-                            color: encouragement.color,
-                            pointerEvents: 'none',
-                            whiteSpace: 'nowrap',
-                            animation: 'fadeInOut 1.5s ease-in-out',
-                            '@keyframes fadeInOut': {
-                              '0%': { opacity: 0, transform: 'translateY(4px)' },
-                              '15%': { opacity: 1, transform: 'translateY(0)' },
-                              '70%': { opacity: 1, transform: 'translateY(0)' },
-                              '100%': { opacity: 0, transform: 'translateY(0)' },
-                            },
-                          }}
-                        >
-                          {encouragement.text}
-                        </Typography>
-                      )}
-                    </Box>
-                  )}
-                </Box>
-
                 {/* Center - Title */}
-                <Box sx={{ textAlign: 'center', position: 'relative', minHeight: 70 }}>
+                <Box sx={{ textAlign: 'center' }}>
                   <Typography
                     sx={{
                       fontFamily: '"Cormorant Garamond", Georgia, serif',
@@ -640,11 +499,106 @@ export default function Game() {
                       letterSpacing: '0.1em',
                       color: timeRemaining <= 10 ? '#d32f2f' : '#666666',
                       textTransform: 'uppercase',
-                      zIndex: 1,
                     }}
                   >
                     {formatTime(timeRemaining)}
                   </Typography>
+                  {encouragement && (
+                    <Typography
+                      sx={{
+                        position: 'absolute',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        bottom: 12,
+                        fontFamily: '"Didot", "Playfair Display", Georgia, serif',
+                        fontSize: '1.25rem',
+                        fontWeight: 700,
+                        fontStyle: 'italic',
+                        color: encouragement.color,
+                        pointerEvents: 'none',
+                        whiteSpace: 'nowrap',
+                        animation: 'fadeInOut 1.5s ease-in-out',
+                        '@keyframes fadeInOut': {
+                          '0%': { opacity: 0, transform: 'translateX(-50%) translateY(4px)' },
+                          '15%': { opacity: 1, transform: 'translateX(-50%) translateY(0)' },
+                          '70%': { opacity: 1, transform: 'translateX(-50%) translateY(0)' },
+                          '100%': { opacity: 0, transform: 'translateX(-50%) translateY(0)' },
+                        },
+                      }}
+                    >
+                      {encouragement.text}
+                    </Typography>
+                  )}
+                </Box>
+
+                {/* Right - Score */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 10,
+                    right: 0,
+                    textAlign: 'right',
+                    zIndex: 2,
+                    transition: 'transform 0.9s cubic-bezier(.22,.68,.36,1)',
+                    transform: scoreFinalized ? 'translateX(-24px)' : 'translateX(0)',
+                  }}
+                >
+                  {score !== undefined && (
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontSize: '0.7rem',
+                          letterSpacing: '0.1em',
+                          color: '#666666',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          transition: 'all 0.6s ease 0.3s',
+                          ...(scoreFinalized && {
+                            letterSpacing: '0.15em',
+                            color: '#999',
+                          }),
+                        }}
+                      >
+                        {scoreFinalized ? 'Final' : 'Score'}
+                      </Typography>
+                      <Typography
+                        key={scoreBumpKey}
+                        sx={{
+                          fontSize: '1.4rem',
+                          fontWeight: 900,
+                          color: '#000000',
+                          fontFamily: 'monospace',
+                          display: 'inline-block',
+                          transition: 'font-size 0.7s cubic-bezier(.22,.68,.36,1), border-bottom-color 0.3s ease 0.8s',
+                          borderBottom: '2px solid transparent',
+                          paddingBottom: '1px',
+                          ...(scoreBumpKey > 0 && !scoreFinalized && {
+                            animation: 'score-bump 0.6s cubic-bezier(.22,.68,.36,1)',
+                          }),
+                          ...(scoreFinalized && {
+                            fontSize: '1.75rem',
+                            borderBottomColor: '#000',
+                            animation: 'score-land 0.45s cubic-bezier(.22,.68,.36,1) 0.75s both',
+                          }),
+                          '@keyframes score-bump': {
+                            '0%': { transform: 'scale(1)', color: '#000000' },
+                            '20%': { transform: 'scale(1.4)', color: '#4caf50' },
+                            '50%': { transform: 'scale(0.95)', color: '#388e3c' },
+                            '75%': { transform: 'scale(1.05)', color: '#66bb6a' },
+                            '100%': { transform: 'scale(1)', color: '#000000' },
+                          },
+                          '@keyframes score-land': {
+                            '0%': { transform: 'scale(1)' },
+                            '45%': { transform: 'scale(1.18)' },
+                            '75%': { transform: 'scale(0.96)' },
+                            '100%': { transform: 'scale(1)' },
+                          },
+                        }}
+                      >
+                        {score}
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
               </Box>
 
