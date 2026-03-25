@@ -166,40 +166,6 @@ function AnimatedNewspaper() {
   )
 }
 
-function downloadSessionsAsCSV(sessions: QuizSession[]) {
-  const headers = ['Quiz ID', 'Score', 'Game #', 'Date', 'Time Ended']
-  const rows = sessions.map((session, index) => {
-    const createdDate = new Date(typeof session.created_at === 'string' ? parseInt(session.created_at) : session.created_at)
-    const endedDate = session.ended_at ? new Date(typeof session.ended_at === 'string' ? parseInt(session.ended_at) : session.ended_at) : null
-    
-    return [
-      session.quiz_id,
-      session.score,
-      sessions.length - index,
-      createdDate.toLocaleDateString(),
-      endedDate ? endedDate.toLocaleTimeString() : '',
-    ]
-  })
-
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.map(cell => {
-      const str = String(cell)
-      return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str
-    }).join(',')),
-  ].join('\n')
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  const url = URL.createObjectURL(blob)
-  link.setAttribute('href', url)
-  link.setAttribute('download', `quiz-sessions-${new Date().toISOString().split('T')[0]}.csv`)
-  link.style.visibility = 'hidden'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
-
 function StatsSection() {
   const { data: sessions, isLoading } = useUserStats()
 
@@ -223,29 +189,25 @@ function StatsSection() {
   const total = sessions.length
   const average = Math.round((sessions.reduce((sum, s) => sum + s.score, 0) / sessions.length) * 10) / 10
 
-  // Smart binning: if <10 games show each, otherwise average by bins
-  const chartData = (() => {
-    if (total <= 10) {
-      return sessions.map((s, index) => ({
-        gameNumber: index + 1,
-        score: s.score,
-      }))
-    }
-    
-    // Determine bin size: show ~10-15 data points
-    const binSize = Math.ceil(total / 12)
-    const bins: Array<{ gameNumber: number; score: number }> = []
-    
-    for (let i = 0; i < total; i += binSize) {
-      const binEnd = Math.min(i + binSize, total)
-      const binSessions = sessions.slice(i, binEnd)
-      const avgScore = Math.round(binSessions.reduce((sum, s) => sum + s.score, 0) / binSessions.length)
-      const gameNumber = Math.ceil((i + binEnd) / 2) // midpoint of bin
-      bins.push({ gameNumber, score: avgScore })
-    }
-    
-    return bins
-  })()
+  // Compute a running rating like chess.com Elo:
+  // Start at 300, move toward each score with a K-factor that shrinks as you play more
+  const chartData: { game: number; rating: number; score: number; date: string }[] = []
+  let rating = 300
+  sessions.forEach((s, i) => {
+    const k = Math.max(16, 64 - i * 2) // K-factor: starts high (volatile), settles down
+    rating = rating + (k * (s.score - rating)) / 600
+    const ts = typeof s.created_at === 'string' ? Number(s.created_at) : s.created_at
+    const d = ts ? new Date(ts) : null
+    const dateStr = d && !isNaN(d.getTime())
+      ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+      : `Game ${i + 1}`
+    chartData.push({
+      game: i + 1,
+      rating: Math.round(rating),
+      score: s.score,
+      date: dateStr,
+    })
+  })
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -313,36 +275,6 @@ function StatsSection() {
             py: 1.5,
             borderRadius: 0,
             background: '#fff',
-[0] Error [TransformError]: Transform failed with 1 error:
-[0] /home/owenk/project/Unpredictable_game/server/odsLoader.ts:1:13: ERROR: Expected ";" but found "XLSX"
-[0]     at failureErrorWithLog (/home/owenk/project/Unpredictable_game/node_modules/esbuild/lib/main.js:1467:15)
-[0]     at /home/owenk/project/Unpredictable_game/node_modules/esbuild/lib/main.js:736:50
-[0]     at responseCallbacks.<computed> (/home/owenk/project/Unpredictable_game/node_modules/esbuild/lib/main.js:603:9)
-[0]     at handleIncomingPacket (/home/owenk/project/Unpredictable_game/node_modules/esbuild/lib/main.js:658:12)
-[0]     at Socket.readFromStdout (/home/owenk/project/Unpredictable_game/node_modules/esbuild/lib/main.js:581:7)
-[0]     at Socket.emit (node:events:507:28)
-[0]     at addChunk (node:internal/streams/readable:559:12)
-[0]     at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
-[0]     at Readable.push (node:internal/streams/readable:390:5)
-[0]     at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
-[0] 
-[0] Node.js v23.11.1
-[1] 2:23:45 AM [vite] http proxy error: /api/auth/me
-[1] Error: connect ECONNREFUSED 127.0.0.1:3001
-[1]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1636:16)
-[1] 2:23:45 AM [vite] http proxy error: /api/auth/me
-[1] Error: connect ECONNREFUSED 127.0.0.1:3001
-[1]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1636:16)
-[1] 2:23:56 AM [vite] http proxy error: /api/auth/login
-[1] Error: connect ECONNREFUSED 127.0.0.1:3001
-[1]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1636:16)
-[1] 2:24:00 AM [vite] http proxy error: /api/auth/register
-[1] Error: connect ECONNREFUSED 127.0.0.1:3001
-[1]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1636:16)
-[1] 2:24:00 AM [vite] http proxy error: /api/auth/register
-[1] Error: connect ECONNREFUSED 127.0.0.1:3001
-[1]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1636:16)
-
             border: '1px solid #ddd',
             boxShadow: 'none',
             textAlign: 'center',
@@ -368,50 +300,44 @@ function StatsSection() {
           boxShadow: 'none',
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-          <Typography
-            sx={{
-              fontFamily: 'Cormorant Garamond, serif',
-              fontSize: '12px',
-              color: '#666',
-              letterSpacing: '1px',
-              textTransform: 'uppercase',
-            }}
-          >
-            Score Trend
-          </Typography>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => downloadSessionsAsCSV(sessions)}
-            sx={{
-              fontSize: '10px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              borderColor: '#ddd',
-              color: '#666',
-              '&:hover': { borderColor: '#000', color: '#000', backgroundColor: '#fafafa' },
-            }}
-          >
-            Download CSV
-          </Button>
-        </Box>
-        <ResponsiveContainer width="100%" height={100}>
+        <Typography
+          sx={{
+            fontFamily: 'Cormorant Garamond, serif',
+            fontSize: '12px',
+            color: '#666',
+            mb: 1.5,
+            letterSpacing: '1px',
+            textTransform: 'uppercase',
+          }}
+        >
+          Score
+        </Typography>
+        <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={chartData} margin={{ top: 2, right: 8, left: -20, bottom: 0 }}>
             <defs>
-              <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#000" stopOpacity={0.15} />
+              <linearGradient id="ratingGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#000" stopOpacity={0.12} />
                 <stop offset="95%" stopColor="#000" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
             <XAxis
-              dataKey="gameNumber"
+              dataKey="game"
               tick={{ fontSize: 9, fill: '#888' }}
               tickLine={false}
               axisLine={false}
+              type="number"
+              domain={[1, 'dataMax']}
+              tickCount={5}
+              allowDecimals={false}
+              label={{ value: 'Games Played', position: 'insideBottomRight', offset: -2, fontSize: 9, fill: '#999' }}
             />
-            <YAxis tick={{ fontSize: 9, fill: '#888' }} tickLine={false} axisLine={false} />
+            <YAxis
+              tick={{ fontSize: 9, fill: '#888' }}
+              tickLine={false}
+              axisLine={false}
+              domain={[0, 600]}
+            />
             <Tooltip
               contentStyle={{
                 borderRadius: 0,
@@ -419,16 +345,30 @@ function StatsSection() {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 fontSize: 11,
               }}
+              formatter={(value) => [String(value), 'Score']}
+              labelFormatter={(_label, payload) => {
+                const item = payload?.[0]?.payload as { date?: string } | undefined
+                return item?.date ?? ''
+              }}
               cursor={{ stroke: '#000', strokeWidth: 1, strokeDasharray: '4 4' }}
             />
             <Area
               type="monotone"
-              dataKey="score"
+              dataKey="rating"
               stroke="#000"
               strokeWidth={2}
-              fill="url(#scoreGrad)"
-              dot={{ r: 2, fill: '#000', strokeWidth: 0 }}
-              activeDot={{ r: 4, strokeWidth: 0 }}
+              fill="url(#ratingGrad)"
+              dot={false}
+              activeDot={{ r: 4, strokeWidth: 0, fill: '#000' }}
+              tooltipType="none"
+            />
+            <Area
+              type="monotone"
+              dataKey="score"
+              stroke="none"
+              fill="none"
+              dot={{ r: 2, fill: '#bbb', strokeWidth: 0 }}
+              activeDot={{ r: 3, strokeWidth: 0, fill: '#888' }}
             />
           </AreaChart>
         </ResponsiveContainer>

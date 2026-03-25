@@ -37,3 +37,31 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Score animation on correct guess */
+@keyframes score-bump {
+  0% {
+    transform: scale(1);
+    color: #000000;
+  }
+  20% {
+    transform: scale(1.4);
+    color: #4caf50;
+  }
+  50% {
+    transform: scale(0.95);
+    color: #388e3c;
+  }
+  75% {
+    transform: scale(1.05);
+    color: #66bb6a;
+  }
+  100% {
+    transform: scale(1);
+    color: #000000;
+  }
+}
+
+.score-bump {
+  animation: score-bump 0.6s cubic-bezier(.22,.68,.36,1);
+}

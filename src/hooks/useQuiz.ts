@@ -33,6 +33,8 @@ export const useQuiz = () => {
       if (!response.ok) throw new Error('Failed to fetch quiz')
       return response.json()
     },
+    staleTime: Infinity,
+    gcTime: 0,
   })
 }
 
