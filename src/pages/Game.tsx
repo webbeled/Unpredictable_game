@@ -70,7 +70,6 @@ export default function Game() {
   const [answerData, setAnswerData] = useState<any>(null)
   const [scorePerPos, setScorePerPos] = useState<Map<string, number>>(new Map())
   const [scoreBumpKey, setScoreBumpKey] = useState(0)
-  const [encouragement, setEncouragement] = useState<{ text: string; color: string } | null>(null)
   const [scoreFinalized, setScoreFinalized] = useState(false)
 
   const { data: randomEntry, isLoading, error, refetch } = useQuiz()
@@ -322,22 +321,6 @@ export default function Game() {
         setScoreBumpKey((k) => k + 1)
         playSuccessSound(score)
 
-        // Show encouragement based on new score
-        const messages: Record<number, string> = {
-          100: 'Nice!',
-          200: 'Good work!',
-          300: 'Great!',
-          400: 'Awesome!',
-          500: 'Almost there!',
-          600: 'Perfect!',
-        }
-        const msg = messages[newScore]
-        if (msg) {
-          const maskColor = MASK_COLORS[result.mask as keyof typeof MASK_COLORS] || '#4caf50'
-          setEncouragement({ text: msg, color: maskColor })
-          setTimeout(() => setEncouragement(null), 1500)
-        }
-
         // Add the revealed mask
         const newRevealedMasks = new Map(revealedMasks)
         newRevealedMasks.set(result.mask, result.word)
@@ -503,32 +486,7 @@ export default function Game() {
                   >
                     {formatTime(timeRemaining)}
                   </Typography>
-                  {encouragement && (
-                    <Typography
-                      sx={{
-                        position: 'absolute',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        bottom: 12,
-                        fontFamily: '"Didot", "Playfair Display", Georgia, serif',
-                        fontSize: '1.25rem',
-                        fontWeight: 700,
-                        fontStyle: 'italic',
-                        color: encouragement.color,
-                        pointerEvents: 'none',
-                        whiteSpace: 'nowrap',
-                        animation: 'fadeInOut 1.5s ease-in-out',
-                        '@keyframes fadeInOut': {
-                          '0%': { opacity: 0, transform: 'translateX(-50%) translateY(4px)' },
-                          '15%': { opacity: 1, transform: 'translateX(-50%) translateY(0)' },
-                          '70%': { opacity: 1, transform: 'translateX(-50%) translateY(0)' },
-                          '100%': { opacity: 0, transform: 'translateX(-50%) translateY(0)' },
-                        },
-                      }}
-                    >
-                      {encouragement.text}
-                    </Typography>
-                  )}
+
                 </Box>
 
                 {/* Right - Score */}
