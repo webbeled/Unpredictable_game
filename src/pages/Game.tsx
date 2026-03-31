@@ -85,6 +85,7 @@ export default function Game() {
   const sessionSaved = useRef(false)
   const answerInputRef = useRef<HTMLInputElement>(null)
   const answerFetchedRef = useRef(false)
+  const guessCounter = useRef<number>(0)
 
   // Record start time whenever a new quiz loads
   useEffect(() => {
@@ -182,8 +183,31 @@ export default function Game() {
       credentials: 'include',
       body: JSON.stringify(payload),
     })
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ['quiz-sessions'] })
+      .then(async (resp) => {
+        try {
+          const data = await resp.json().catch(() => null)
+          // If server returned session id, attach it to previously logged guesses (non-blocking)
+          if (data?.id) {
+            try {
+              fetch('/api/guesses/attach-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  session_id: data.id,
+                  quiz_id: randomEntry?.id,
+                  created_at: quizStartedAt.current,
+                }),
+              }).catch((err) => console.error('Failed to attach session to guesses:', err))
+            } catch (err) {
+              console.error('Failed to initiate attach-session call:', err)
+            }
+          }
+        } catch (err) {
+          console.error('Failed to parse quiz session response:', err)
+        } finally {
+          queryClient.invalidateQueries({ queryKey: ['quiz-sessions'] })
+        }
       })
       .catch((err) => console.error('Failed to save quiz session:', err))
   }
@@ -322,6 +346,8 @@ export default function Game() {
     try {
       const result = await submitGuess(trimmedGuess)
 
+      const scoreBefore = score
+
       const newGuesses = new Map(guesses)
       if (!newGuesses.has(selectedMask)) newGuesses.set(selectedMask, new Set())
       newGuesses.get(selectedMask)!.add(trimmedGuess)
@@ -373,6 +399,30 @@ export default function Game() {
             console.error('Failed to fetch full answer:', err)
           })
         }
+      }
+
+      // Log the guess to the tidy `guesses` table (non-blocking)
+      try {
+        const guessPayload = {
+          session_id: null,
+          quiz_id: randomEntry?.id,
+          guess_order: ++guessCounter.current,
+          ts: Date.now(),
+          guessed_word: trimmedGuess,
+          part_of_speech: selectedMask,
+          correct: result.correct ? 1 : 0,
+          score_before_guess: scoreBefore,
+          score_after_guess: result.correct && result.mask ? (scoreBefore + 100) : scoreBefore,
+        }
+
+        fetch('/api/guesses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(guessPayload),
+        }).catch((err) => console.error('Failed to log guess:', err))
+      } catch (err) {
+        console.error('Failed to build guess payload:', err)
       }
     } catch (err) {
       setGuessError(err instanceof Error ? err.message : 'Failed to submit guess')

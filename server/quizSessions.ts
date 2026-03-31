@@ -24,7 +24,7 @@ router.get('/', async (req: Request, res: Response) => {
 
   try {
     const result = await pool.query(
-      `SELECT quiz_id, score, created_at, ended_at FROM quiz_sessions
+      `SELECT id, quiz_id, score, created_at, ended_at FROM quiz_sessions
        WHERE user_id = $1 ORDER BY created_at ASC`,
       [userId]
     )

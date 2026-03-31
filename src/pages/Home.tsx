@@ -16,6 +16,7 @@ import {
 } from 'recharts'
 
 interface QuizSession {
+  id?: number
   quiz_id: string
   score: number
   created_at: number | string
@@ -191,21 +192,26 @@ function StatsSection() {
 
   // Compute a running rating like chess.com Elo:
   // Start at 300, move toward each score with a K-factor that shrinks as you play more
-  const chartData: { game: number; rating: number; score: number; date: string }[] = []
+  const chartData: { game: number; rating: number; score: number; date: string; sessionId?: number }[] = []
   let rating = 300
   sessions.forEach((s, i) => {
     const k = Math.max(16, 64 - i * 2) // K-factor: starts high (volatile), settles down
     rating = rating + (k * (s.score - rating)) / 600
     const ts = typeof s.created_at === 'string' ? Number(s.created_at) : s.created_at
-    const d = ts ? new Date(ts) : null
-    const dateStr = d && !isNaN(d.getTime())
-      ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-      : `Game ${i + 1}`
+    const d = ts ? new Date(Number(ts)) : null
+    let dateStr = `Game ${i + 1}`
+    if (d && !isNaN(d.getTime())) {
+      const datePart = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+      const timePart = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      const ms = d.getMilliseconds().toString().padStart(3, '0')
+      dateStr = `${datePart} ${timePart}.${ms}`
+    }
     chartData.push({
       game: i + 1,
       rating: Math.round(rating),
       score: s.score,
       date: dateStr,
+      sessionId: (s as any).id ?? null,
     })
   })
 
@@ -350,8 +356,9 @@ function StatsSection() {
                 [String(value), name === 'rating' ? 'Score' : 'Game Score']
               }
               labelFormatter={(_label, payload) => {
-                const item = payload?.[0]?.payload as { date?: string } | undefined
-                return item?.date ?? ''
+                const item = payload?.[0]?.payload as { date?: string; sessionId?: number } | undefined
+                if (!item) return ''
+                return item.sessionId ? `${item.date} (session ${item.sessionId})` : item.date
               }}
               cursor={{ stroke: '#000', strokeWidth: 1, strokeDasharray: '4 4' }}
             />

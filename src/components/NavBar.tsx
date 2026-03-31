@@ -49,16 +49,16 @@ export default function NavBar({ score }: NavBarProps) {
         sx={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-end',
+          justifyContent: 'flex-start',
+          position: 'relative',
           py: 1,
           px: 3,
         }}
       >
-        {/* Controls on right */}
+        {/* Left: score */}
         <Box
           sx={{
             display: 'flex',
-            justifyContent: 'flex-end',
             alignItems: 'center',
             gap: 1.5,
             mr: 'auto',
@@ -75,16 +75,18 @@ export default function NavBar({ score }: NavBarProps) {
               Score: {score}
             </Typography>
           )}
-          <Box sx={{ position: 'relative' }}>
-            <IconButton color="inherit" onClick={() => logout().then(() => navigate('/auth'))} sx={{ color: '#000000' }}>
-              <LogoutIcon />
-            </IconButton>
-            {user && (
-              <Typography sx={{ fontSize: '0.75rem', color: '#666666', position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: '100%', whiteSpace: 'nowrap', mt: -0.5 }}>
-                {user.email}
-              </Typography>
-            )}
-          </Box>
+        </Box>
+
+        {/* Center: logout (absolutely centered in toolbar) */}
+        <Box sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton color="inherit" onClick={() => logout().then(() => navigate('/auth'))} sx={{ color: '#000000' }}>
+            <LogoutIcon />
+          </IconButton>
+          {user && (
+            <Typography sx={{ fontSize: '0.75rem', color: '#666666', whiteSpace: 'nowrap', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {user.email}
+            </Typography>
+          )}
         </Box>
       </Toolbar>
     </AppBar>
