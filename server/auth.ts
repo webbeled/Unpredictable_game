@@ -82,14 +82,14 @@ router.post('/login', async (req: Request, res: Response) => {
       res.status(401).json({ error: 'Invalid email or password' })
       return
     }
-    const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' })
+    const token = jwt.sign({ userId: user.user_uuid, email: user.email }, JWT_SECRET, { expiresIn: '7d' })
     res.cookie('token', token, {
       httpOnly: true,
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     })
     res.json({ 
-      id: user.id, 
+      id: user.user_uuid, 
       email: user.email, 
       participant_code: user.participant_code ?? null,
       nationality: user.nationality ?? null,
@@ -114,9 +114,9 @@ router.get('/me', (req: Request, res: Response) => {
     return
   }
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { userId: number; email: string }
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string; email: string }
     // Look up user demographics for this user
-    pool.query('SELECT participant_code, nationality, gender, first_language_is_english FROM users WHERE id = $1', [payload.userId])
+    pool.query('SELECT participant_code, nationality, gender, first_language_is_english FROM users WHERE user_uuid = $1', [payload.userId])
       .then((r) => {
         const user = r.rows[0]
         res.json({ 

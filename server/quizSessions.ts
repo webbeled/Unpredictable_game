@@ -13,9 +13,9 @@ router.get('/', async (req: Request, res: Response) => {
     return
   }
 
-  let userId: number
+  let userId: string
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { userId: number; email: string }
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string; email: string }
     userId = payload.userId
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' })
@@ -55,9 +55,9 @@ router.post('/', async (req: Request, res: Response) => {
     return
   }
 
-  let userId: number
+  let userId: string
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { userId: number; email: string }
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string; email: string }
     userId = payload.userId
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' })

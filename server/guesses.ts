@@ -9,11 +9,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
 router.post('/', async (req: Request, res: Response) => {
   // Allow anonymous guesses: if a valid token exists, set userId and userEmail; otherwise proceed with nulls
   const token = req.cookies?.token
-  let userId: number | null = null
+  let userId: string | null = null
   let userEmail: string | null = null
   if (token) {
     try {
-      const payload = jwt.verify(token, JWT_SECRET) as { userId: number; email: string }
+      const payload = jwt.verify(token, JWT_SECRET) as { userId: string; email: string }
       userId = payload.userId
       userEmail = payload.email ?? null
     } catch (err) {
