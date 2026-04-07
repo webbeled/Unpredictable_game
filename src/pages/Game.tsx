@@ -425,7 +425,15 @@ export default function Game() {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify(guessPayload),
-        }).catch((err) => console.error('Failed to log guess:', err))
+        })
+          .then(res => {
+            if (!res.ok) {
+              console.error('Failed to save guess - HTTP error:', res.status)
+              return res.text().then(text => console.error('Response:', text))
+            }
+            return res.json()
+          })
+          .catch((err) => console.error('Failed to log guess:', err))
       } catch (err) {
         console.error('Failed to build guess payload:', err)
       }
