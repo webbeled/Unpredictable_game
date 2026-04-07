@@ -184,17 +184,18 @@ function estimateTextWidth(text: string, fontSize: number): number {
 
 /**
  * Calculate proportional spacing for ornaments
+ * (Unused - kept for reference)
  */
-function calculateOrnamentSpacing(
-  totalWidth: number,
-  textWidth: number,
-  preset: RulePreset
-): { leftSpace: number; rightSpace: number } {
-  const totalSpacing = totalWidth - textWidth
-  const leftSpace = totalSpacing / 2
-  const rightSpace = totalSpacing / 2
-  return { leftSpace, rightSpace }
-}
+// function calculateOrnamentSpacing(
+//   totalWidth: number,
+//   textWidth: number,
+//   preset: RulePreset
+// ): { leftSpace: number; rightSpace: number } {
+//   const totalSpacing = totalWidth - textWidth
+//   const leftSpace = totalSpacing / 2
+//   const rightSpace = totalSpacing / 2
+//   return { leftSpace, rightSpace }
+// }
 
 /**
  * Scale ornament paths by a given factor
@@ -211,11 +212,12 @@ function scaleOrnament(path: string, scale: number, originX: number = 0): string
 
 /**
  * Translate path by x, y offset
+ * (Unused - kept for reference)
  */
-function translatePath(path: string, x: number, y: number): string {
-  if (!path) return ''
-  return `translate(${x} ${y}) ${path}`
-}
+// function translatePath(path: string, x: number, y: number): string {
+//   if (!path) return ''
+//   return `translate(${x} ${y}) ${path}`
+// }
 
 // ============================================================================
 // MAIN COMPONENT BUILDER
@@ -234,7 +236,6 @@ export function createOrnamentalRule(options: OrnamentalRuleOptions = {}): strin
   const lineColor = options.lineColor ?? '#000000'
   const ornamentColor = options.ornamentColor ?? '#000000'
   const text = options.text ?? ''
-  const alignment = options.alignment ?? preset.alignment
 
   const contentWidth = width - 2 * padding
   const centerY = height / 2
