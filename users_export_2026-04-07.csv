@@ -1,0 +1,4 @@
+id,email,created_at,total_sessions,total_guesses,correct_guesses,avg_score
+1,okearey@yahoo.com,1775561438507,2,6,1,85.71
+2,samuel@yahoo.com,1775566385725,13,31,7,128.21
+3,okearey45@yahoo.com,1775574066737,1,0,0,0.00
