@@ -24,8 +24,21 @@ router.get('/', async (req: Request, res: Response) => {
 
   try {
     const result = await pool.query(
-      `SELECT id, quiz_id, score, created_at, ended_at FROM quiz_sessions
-       WHERE user_id = $1 ORDER BY created_at ASC`,
+      `SELECT 
+        qs.id, 
+        qs.quiz_id, 
+        qs.score, 
+        qs.created_at, 
+        qs.ended_at,
+        json_agg(
+          json_build_object('part_of_speech', g.part_of_speech)
+          ORDER BY g.guess_order
+        ) FILTER (WHERE g.correct = true) as correct_guesses
+       FROM quiz_sessions qs
+       LEFT JOIN guesses g ON qs.id = g.session_id
+       WHERE qs.user_id = $1 
+       GROUP BY qs.id, qs.quiz_id, qs.score, qs.created_at, qs.ended_at
+       ORDER BY qs.created_at ASC`,
       [userId]
     )
     res.json(result.rows)

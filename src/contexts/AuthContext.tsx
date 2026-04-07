@@ -10,7 +10,7 @@ interface AuthContextType {
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
-  register: (email: string, password: string) => Promise<void>
+  register: (email: string, password: string, nationality?: string, gender?: string, firstLanguageEnglish?: boolean | null) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -47,12 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
-  const register = async (email: string, password: string) => {
+  const register = async (email: string, password: string, nationality?: string, gender?: string, firstLanguageEnglish?: boolean | null) => {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, nationality, gender, firstLanguageEnglish }),
     })
     if (!res.ok) {
       const data = await res.json()

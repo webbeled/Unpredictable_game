@@ -14,7 +14,7 @@ function generateParticipantCode() {
 }
 
 router.post('/register', async (req: Request, res: Response) => {
-  const { email, password } = req.body
+  const { email, password, nationality, gender, firstLanguageEnglish } = req.body
   if (!email || !password) {
     res.status(400).json({ error: 'Email and password are required' })
     return
@@ -34,8 +34,8 @@ router.post('/register', async (req: Request, res: Response) => {
 
     // Fallback: allow null participant_code if uniqueness cannot be guaranteed (very unlikely)
     await pool.query(
-      'INSERT INTO users (email, password_hash, participant_code) VALUES ($1, $2, $3)',
-      [email, passwordHash, participantCode]
+      'INSERT INTO users (email, password_hash, participant_code, nationality, gender, first_language_is_english) VALUES ($1, $2, $3, $4, $5, $6)',
+      [email, passwordHash, participantCode, nationality || null, gender || null, firstLanguageEnglish ?? null]
     )
     res.status(201).json({ message: 'User created', participant_code: participantCode })
   } catch (err: unknown) {
@@ -73,7 +73,14 @@ router.post('/login', async (req: Request, res: Response) => {
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     })
-    res.json({ id: user.id, email: user.email, participant_code: user.participant_code ?? null })
+    res.json({ 
+      id: user.id, 
+      email: user.email, 
+      participant_code: user.participant_code ?? null,
+      nationality: user.nationality ?? null,
+      gender: user.gender ?? null,
+      first_language_is_english: user.first_language_is_english ?? null,
+    })
   } catch (err) {
     console.error('Login error:', err)
     res.status(500).json({ error: 'Internal server error' })
@@ -93,14 +100,21 @@ router.get('/me', (req: Request, res: Response) => {
   }
   try {
     const payload = jwt.verify(token, JWT_SECRET) as { userId: number; email: string }
-    // Look up participant_code for this user for convenience (does not expose email for exports)
-    pool.query('SELECT participant_code FROM users WHERE id = $1', [payload.userId])
+    // Look up user demographics for this user
+    pool.query('SELECT participant_code, nationality, gender, first_language_is_english FROM users WHERE id = $1', [payload.userId])
       .then((r) => {
-        const code = r.rows[0]?.participant_code ?? null
-        res.json({ id: payload.userId, email: payload.email, participant_code: code })
+        const user = r.rows[0]
+        res.json({ 
+          id: payload.userId, 
+          email: payload.email, 
+          participant_code: user?.participant_code ?? null,
+          nationality: user?.nationality ?? null,
+          gender: user?.gender ?? null,
+          first_language_is_english: user?.first_language_is_english ?? null,
+        })
       })
       .catch((err) => {
-        console.error('Error fetching participant code:', err)
+        console.error('Error fetching user details:', err)
         res.json({ id: payload.userId, email: payload.email, participant_code: null })
       })
   } catch {

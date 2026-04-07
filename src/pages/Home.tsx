@@ -3,11 +3,13 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import NavBar from '../components/NavBar'
+import anrLogo from '../assets/logos/ANR-cop.png'
+import culturelabLogo from '../assets/logos/CultureLab-Blanc.webp'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -57,7 +59,7 @@ function AnimatedNewspaper() {
     { text: '______', color: '#FFE66D' },
     { text: ' earns you ', color: '' },
     { text: '______', color: '#C7CEEA' },
-    { text: '. Good luck!', color: '' },
+    { text: '. Good luck!!', color: '' },
   ]
 
   useEffect(() => {
@@ -146,7 +148,7 @@ function AnimatedNewspaper() {
                 backgroundColor: item.color,
                 padding: '2px 4px',
                 borderRadius: '2px',
-                fontWeight: 'bold',
+                fontWeight: '600',
               }}
             >
               {item.text}
@@ -192,11 +194,24 @@ function StatsSection() {
 
   // Compute a running rating like chess.com Elo:
   // Start at 300, move toward each score with a K-factor that shrinks as you play more
-  const chartData: { game: number; rating: number; score: number; date: string; sessionId?: number }[] = []
-  let rating = 300
+  const POSColors: Record<string, string> = {
+    '1111': '#FF6B6B', // Adjectives - red
+    '2222': '#4ECDC4', // Closed class/Function words - teal
+    '3333': '#4CAF50', // Nouns - green
+    '4444': '#FFE66D', // Numbers - yellow
+    '5555': '#C7CEEA', // Proper nouns - lavender
+    '6666': '#A78BFA', // Verbs - purple
+  }
+
+  const chartData: { 
+    game: number
+    score: number
+    date: string
+    blocks: { color: string }[]
+    sessionId?: number 
+  }[] = []
+  
   sessions.forEach((s, i) => {
-    const k = Math.max(16, 64 - i * 2) // K-factor: starts high (volatile), settles down
-    rating = rating + (k * (s.score - rating)) / 600
     const ts = typeof s.created_at === 'string' ? Number(s.created_at) : s.created_at
     const d = ts ? new Date(Number(ts)) : null
     let dateStr = `Game ${i + 1}`
@@ -206,91 +221,130 @@ function StatsSection() {
       const ms = d.getMilliseconds().toString().padStart(3, '0')
       dateStr = `${datePart} ${timePart}.${ms}`
     }
+
+    // Create colored blocks for each correct guess
+    const blocks: { color: string }[] = []
+    const correctGuesses = (s as any).correct_guesses || []
+    
+    if (Array.isArray(correctGuesses) && correctGuesses.length > 0) {
+      correctGuesses.forEach((guess: { part_of_speech: string }) => {
+        const pos = guess.part_of_speech || ''
+        const color = POSColors[pos] || '#999'
+        blocks.push({ color })
+      })
+    }
+
+    // If no correct guesses, show gray block for zero score
+    if (blocks.length === 0) {
+      blocks.push({ color: '#ccc' })
+    }
+
     chartData.push({
       game: i + 1,
-      rating: Math.round(rating),
       score: s.score,
       date: dateStr,
+      blocks,
       sessionId: (s as any).id ?? null,
     })
   })
+  console.log('Chart data:', chartData)
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1.5, mb: 4 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 4 }}>
         <Card
           sx={{
-            px: 2,
-            py: 1.5,
+            px: 2.5,
+            py: 2.5,
             borderRadius: 0,
             background: '#fff',
-            border: '1px solid #ddd',
+            border: '2px solid #000',
             boxShadow: 'none',
             textAlign: 'center',
-            '&:hover': { boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
+            transition: 'all 0.2s ease',
+            '&:hover': { 
+              boxShadow: '2px 2px 8px rgba(0,0,0,0.15)',
+              transform: 'translate(-1px, -1px)',
+            },
           }}
         >
-          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '22px', fontWeight: 'bold' }}>
+          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '28px', fontWeight: 'bold', color: '#000', letterSpacing: '-1px' }}>
             {total}
           </Typography>
-          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '10px', color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>
+          <Box sx={{ height: '1px', background: '#000', my: 1.2, mx: 0 }} />
+          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '9px', color: '#333', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 500 }}>
             Games
           </Typography>
         </Card>
         <Card
           sx={{
-            px: 2,
-            py: 1.5,
+            px: 2.5,
+            py: 2.5,
             borderRadius: 0,
             background: '#fff',
-            border: '1px solid #ddd',
+            border: '2px solid #000',
             boxShadow: 'none',
             textAlign: 'center',
-            '&:hover': { boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
+            transition: 'all 0.2s ease',
+            '&:hover': { 
+              boxShadow: '2px 2px 8px rgba(0,0,0,0.15)',
+              transform: 'translate(-1px, -1px)',
+            },
           }}
         >
-          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '22px', fontWeight: 'bold' }}>
+          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '28px', fontWeight: 'bold', color: '#000', letterSpacing: '-1px' }}>
             {best}
           </Typography>
-          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '10px', color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>
+          <Box sx={{ height: '1px', background: '#000', my: 1.2, mx: 0 }} />
+          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '9px', color: '#333', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 500 }}>
             Best
           </Typography>
         </Card>
         <Card
           sx={{
-            px: 2,
-            py: 1.5,
+            px: 2.5,
+            py: 2.5,
             borderRadius: 0,
             background: '#fff',
-            border: '1px solid #ddd',
+            border: '2px solid #000',
             boxShadow: 'none',
             textAlign: 'center',
-            '&:hover': { boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
+            transition: 'all 0.2s ease',
+            '&:hover': { 
+              boxShadow: '2px 2px 8px rgba(0,0,0,0.15)',
+              transform: 'translate(-1px, -1px)',
+            },
           }}
         >
-          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '22px', fontWeight: 'bold' }}>
+          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '28px', fontWeight: 'bold', color: '#000', letterSpacing: '-1px' }}>
             {average}
           </Typography>
-          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '10px', color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>
+          <Box sx={{ height: '1px', background: '#000', my: 1.2, mx: 0 }} />
+          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '9px', color: '#333', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 500 }}>
             Average
           </Typography>
         </Card>
         <Card
           sx={{
-            px: 2,
-            py: 1.5,
+            px: 2.5,
+            py: 2.5,
             borderRadius: 0,
-            background: '#fff',
-            border: '1px solid #ddd',
+            background: '#000',
+            border: '2px solid #000',
             boxShadow: 'none',
             textAlign: 'center',
-            '&:hover': { boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
+            transition: 'all 0.2s ease',
+            '&:hover': { 
+              boxShadow: '2px 2px 8px rgba(0,0,0,0.25)',
+              transform: 'translate(-1px, -1px)',
+            },
           }}
         >
-          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '22px', fontWeight: 'bold' }}>
+          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '28px', fontWeight: 'bold', color: '#fff', letterSpacing: '-1px' }}>
             {sessions[sessions.length - 1].score}
           </Typography>
-          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '10px', color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>
+          <Box sx={{ height: '1px', background: '#fff', my: 1.2, mx: 0 }} />
+          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '9px', color: '#e0e0e0', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 500 }}>
             Latest
           </Typography>
         </Card>
@@ -299,90 +353,119 @@ function StatsSection() {
       <Paper
         elevation={0}
         sx={{
-          p: 2,
+          p: 3,
           borderRadius: 0,
-          border: '1px solid #ddd',
-          background: '#fff',
-          boxShadow: 'none',
+          border: '2px solid #000',
+          background: '#fafafa',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
         }}
       >
         <Typography
           sx={{
             fontFamily: 'Cormorant Garamond, serif',
-            fontSize: '12px',
-            color: '#666',
-            mb: 1.5,
-            letterSpacing: '1px',
+            fontSize: '13px',
+            color: '#333',
+            mb: 2.5,
+            letterSpacing: '1.5px',
             textTransform: 'uppercase',
+            fontWeight: 500,
           }}
         >
-          Score
+          Your Progression
         </Typography>
-        <ResponsiveContainer width="100%" height={120}>
-          <AreaChart data={chartData} margin={{ top: 2, right: 8, left: -20, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={total > 20 ? 320 : 220}>
+          <BarChart 
+            data={chartData} 
+            margin={{ top: 10, right: 10, left: -12, bottom: 10 }}
+          >
             <defs>
-              <linearGradient id="ratingGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#000" stopOpacity={0.12} />
-                <stop offset="95%" stopColor="#000" stopOpacity={0} />
+              <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#1a1a1a" stopOpacity={1} />
+                <stop offset="50%" stopColor="#333" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#000" stopOpacity={0.95} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+            <CartesianGrid strokeDasharray="2 4" stroke="rgba(0,0,0,0.08)" vertical={false} />
             <XAxis
               dataKey="game"
-              tick={{ fontSize: 9, fill: '#888' }}
+              tick={{ fontSize: 8, fill: '#888' }}
               tickLine={false}
               axisLine={false}
-              type="number"
-              domain={[1, 'dataMax']}
-              tickCount={5}
-              allowDecimals={false}
-              label={{ value: 'Games Played', position: 'insideBottomRight', offset: -2, fontSize: 9, fill: '#999' }}
+              type={total > 50 ? 'number' : 'category'}
+              {...(total > 50 ? { domain: [1, 'dataMax'], tickCount: Math.min(10, Math.ceil(total / 10)) } : {})}
+              interval={Math.max(0, Math.floor(total / 15))}
             />
             <YAxis
-              tick={{ fontSize: 9, fill: '#888' }}
+              tick={{ fontSize: 8, fill: '#888' }}
               tickLine={false}
               axisLine={false}
               domain={[0, 600]}
-              ticks={[0, 100, 200, 300, 400, 500, 600]}
             />
             <Tooltip
               contentStyle={{
                 borderRadius: 0,
-                border: '1px solid #ddd',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                fontSize: 11,
+                border: '1px solid #000',
+                boxShadow: '2px 2px 8px rgba(0,0,0,0.15)',
+                fontSize: 12,
+                backgroundColor: '#fff',
+                padding: '10px 12px',
               }}
-              formatter={(value, name) =>
-                [String(value), name === 'rating' ? 'Score' : 'Game Score']
-              }
+              formatter={(value) => String(value)}
               labelFormatter={(_label, payload) => {
-                const item = payload?.[0]?.payload as { date?: string; sessionId?: number } | undefined
-                if (!item) return ''
-                return item.sessionId ? `${item.date} (session ${item.sessionId})` : item.date
+                const item = payload?.[0]?.payload as { date?: string; game?: number; score?: number } | undefined
+                return `Game ${item?.game ?? ''} - Score: ${item?.score ?? 0}`
               }}
-              cursor={{ stroke: '#000', strokeWidth: 1, strokeDasharray: '4 4' }}
+              cursor={{ fill: 'rgba(0,0,0,0.03)' }}
             />
-            <Area
-              type="monotone"
-              dataKey="rating"
-              stroke="#000"
-              strokeWidth={2}
-              fill="url(#ratingGrad)"
-              dot={false}
-              activeDot={{ r: 4, strokeWidth: 0, fill: '#000' }}
-            />
-            <Area
-              type="monotone"
-              dataKey="score"
-              stroke="none"
-              fill="none"
-              dot={{ r: 2, fill: '#bbb', strokeWidth: 0 }}
-              activeDot={{ r: 3, strokeWidth: 0, fill: '#888' }}
-            />
-          </AreaChart>
+            <Bar dataKey="score" radius={[0, 0, 0, 0]} shape={<CustomBlockShape chartData={chartData} />} />
+          </BarChart>
         </ResponsiveContainer>
       </Paper>
     </Box>
+  )
+}
+
+interface CustomBlockShapeProps {
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+  index?: number
+  chartData: Array<{
+    game: number
+    score: number
+    blocks: { color: string }[]
+  }>
+}
+
+const CustomBlockShape = (props: CustomBlockShapeProps) => {
+  const { x = 0, y = 0, width = 0, height = 0, index = 0, chartData } = props
+  const entry = chartData[index]
+  
+  if (!entry || !entry.blocks.length) return null
+
+  const numBlocks = entry.blocks.length
+  const blockHeight = Math.max(2, height / numBlocks)
+  const blockWidth = Math.max(4, width - 2)
+
+  return (
+    <g>
+      {entry.blocks.map((block: { color: string }, blockIdx: number) => {
+        const blockY = y + height - (blockIdx + 1) * blockHeight
+        return (
+          <rect
+            key={`block-${index}-${blockIdx}`}
+            x={x + 1}
+            y={blockY}
+            width={blockWidth}
+            height={blockHeight}
+            fill={block.color}
+            stroke="#fff"
+            strokeWidth={0.5}
+          />
+        )
+      })}
+    </g>
   )
 }
 
@@ -575,6 +658,46 @@ export default function Home() {
             <StatsSection />
           </Container>
         )}
+
+        {/* Footer with logos */}
+        <Box
+          sx={{
+            mt: 'auto',
+            pt: 8,
+            pb: 2,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 4,
+            opacity: 0.55,
+            transition: 'opacity 0.3s ease',
+            '&:hover': {
+              opacity: 0.75,
+            },
+          }}
+        >
+          <img
+            src={anrLogo}
+            alt="ANR"
+            style={{
+              height: 32,
+              width: 'auto',
+            }}
+          />
+          <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
+          <img
+            src={culturelabLogo}
+            alt="CultureLab"
+            style={{
+              height: 32,
+              width: 'auto',
+              filter: 'drop-shadow(0px 0px 0.8px #000)',
+              paintOrder: 'stroke',
+              stroke: '#000',
+              strokeWidth: '0.5px',
+            }}
+          />
+        </Box>
       </Box>
     </>
   )

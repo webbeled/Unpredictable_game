@@ -21,7 +21,7 @@ const ConfigContext = createContext<ConfigContextType | undefined>(undefined)
 export function ConfigProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<Config>(() => {
     const stored = localStorage.getItem(CONFIG_STORAGE_KEY)
-    if (stored) {
+    if (stored && stored.trim()) {
       try {
         return { ...defaultConfig, ...JSON.parse(stored), timerDuration: defaultConfig.timerDuration }
       } catch {

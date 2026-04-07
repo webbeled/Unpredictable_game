@@ -186,6 +186,11 @@ export default function Game() {
       .then(async (resp) => {
         try {
           const data = await resp.json().catch(() => null)
+          console.log('Quiz session save response:', resp.status, data)
+          if (!resp.ok) {
+            console.error('Failed to save quiz session - HTTP error:', resp.status, data)
+            return
+          }
           // If server returned session id, attach it to previously logged guesses (non-blocking)
           if (data?.id) {
             try {

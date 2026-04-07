@@ -7,19 +7,21 @@ const router = Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
 
 router.post('/', async (req: Request, res: Response) => {
+  // Allow anonymous guesses: if a valid token exists, set userId and userEmail; otherwise proceed with nulls
   const token = req.cookies?.token
-  if (!token) {
-    res.status(401).json({ error: 'Not authenticated' })
-    return
-  }
-
-  let userId: number
-  try {
-    const payload = jwt.verify(token, JWT_SECRET) as { userId: number; email: string }
-    userId = payload.userId
-  } catch {
-    res.status(401).json({ error: 'Invalid or expired token' })
-    return
+  let userId: number | null = null
+  let userEmail: string | null = null
+  if (token) {
+    try {
+      const payload = jwt.verify(token, JWT_SECRET) as { userId: number; email: string }
+      userId = payload.userId
+      userEmail = payload.email ?? null
+    } catch (err) {
+      // Invalid token: log and continue with anonymous (null) values
+      console.warn('Invalid or expired token when saving guess, proceeding as anonymous')
+      userId = null
+      userEmail = null
+    }
   }
 
   const {
@@ -37,12 +39,13 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `INSERT INTO guesses (
-        session_id, quiz_id, user_id, guess_order, ts, guessed_word, part_of_speech, correct, score_before_guess, score_after_guess
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+        session_id, quiz_id, user_id, user_email, guess_order, ts, guessed_word, part_of_speech, correct, score_before_guess, score_after_guess
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
       [
         session_id ?? null,
         quiz_id ?? null,
         userId,
+        userEmail,
         guess_order ?? null,
         ts ?? Date.now(),
         guessed_word ?? null,
