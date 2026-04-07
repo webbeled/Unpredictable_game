@@ -32,11 +32,26 @@ router.post('/register', async (req: Request, res: Response) => {
       }
     }
 
-    // Fallback: allow null participant_code if uniqueness cannot be guaranteed (very unlikely)
-    await pool.query(
-      'INSERT INTO users (email, password_hash, participant_code, nationality, gender, first_language_is_english) VALUES ($1, $2, $3, $4, $5, $6)',
-      [email, passwordHash, participantCode, nationality || null, gender || null, firstLanguageEnglish ?? null]
-    )
+    // Insert user with optional demographic fields
+    // Try with demographic fields first, fall back to basic fields if columns don't exist
+    try {
+      await pool.query(
+        'INSERT INTO users (email, password_hash, participant_code, nationality, gender, first_language_is_english) VALUES ($1, $2, $3, $4, $5, $6)',
+        [email, passwordHash, participantCode, nationality || null, gender || null, firstLanguageEnglish ?? null]
+      )
+    } catch (err: unknown) {
+      const pgErr = err as { code?: string; message?: string }
+      // If columns don't exist, fall back to basic insert
+      if (pgErr.code === '42703') {
+        await pool.query(
+          'INSERT INTO users (email, password_hash, participant_code) VALUES ($1, $2, $3)',
+          [email, passwordHash, participantCode]
+        )
+      } else {
+        throw err
+      }
+    }
+
     res.status(201).json({ message: 'User created', participant_code: participantCode })
   } catch (err: unknown) {
     const pgErr = err as { code?: string }

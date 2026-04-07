@@ -1,0 +1,2 @@
+-- Placeholder migration 7
+-- This migration number was skipped in the original sequence
