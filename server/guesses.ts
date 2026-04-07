@@ -39,13 +39,12 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `INSERT INTO guesses (
-        session_id, quiz_id, user_id, user_email, guess_order, ts, guessed_word, part_of_speech, correct, score_before_guess, score_after_guess
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+        session_id, quiz_id, user_id, guess_order, ts, guessed_word, part_of_speech, correct, score_before_guess, score_after_guess
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
       [
         session_id ?? null,
         quiz_id ?? null,
         userId,
-        userEmail,
         guess_order ?? null,
         ts ?? Date.now(),
         guessed_word ?? null,
