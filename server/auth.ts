@@ -15,6 +15,7 @@ function generateParticipantCode() {
 
 router.post('/register', async (req: Request, res: Response) => {
   const { email, password, nationality, gender, firstLanguageEnglish } = req.body
+  console.log('Register request:', { email, nationality, gender, firstLanguageEnglish })
   if (!email || !password) {
     res.status(400).json({ error: 'Email and password are required' })
     return
