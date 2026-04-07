@@ -1,137 +1,73 @@
 import 'dotenv/config'
 import pg from 'pg'
 import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 const pool = new pg.Pool({
   host: process.env.PGHOST,
-  port: Number(process.env.PGPORT),
+  port: Number(process.env.PGPORT) || 5433,
   database: process.env.PGDATABASE,
   user: process.env.PGUSER,
   password: process.env.PGPASSWORD,
 })
 
 /**
- * Export quiz_sessions data to CSV
- * Each row represents one quiz session
+ * Export quiz_sessions data to CSV with user UUIDs
  */
 async function exportQuizSessionsToCSV() {
   try {
     console.log('Fetching quiz sessions data...')
-    const scoreColumns = new Set([
-      'adj_score_before_guess',
-      'func_score_before_guess',
-      'noun_score_before_guess',
-      'num_score_before_guess',
-      'propn_score_before_guess',
-      'verb_score_before_guess',
-    ])
-
     const result = await pool.query(`
       SELECT 
-        id,
-        quiz_id,
-        user_id,
-        score,
-        created_at,
-        ended_at,
-        adj_score_before_guess,
-        adj_correct,
-        adj_guesses,
-        func_score_before_guess,
-        func_correct,
-        func_guesses,
-        noun_score_before_guess,
-        noun_correct,
-        noun_guesses,
-        num_score_before_guess,
-        num_correct,
-        num_guesses,
-        propn_score_before_guess,
-        propn_correct,
-        propn_guesses,
-        verb_score_before_guess,
-        verb_correct,
-        verb_guesses
-      FROM quiz_sessions
-      ORDER BY created_at DESC
+        qs.id as session_id,
+        qs.quiz_id,
+        u.user_uuid::text as user_id,
+        qs.score,
+        qs.created_at,
+        qs.ended_at,
+        to_timestamp(qs.created_at::double precision / 1000) as created_at_readable,
+        CASE WHEN qs.ended_at IS NOT NULL THEN to_timestamp(qs.ended_at::double precision / 1000) ELSE NULL END as ended_at_readable,
+        COUNT(DISTINCT g.id) as total_guesses,
+        COUNT(DISTINCT CASE WHEN g.correct = true THEN g.id END) as correct_guesses
+      FROM quiz_sessions qs
+      LEFT JOIN users u ON qs.user_id = u.user_uuid
+      LEFT JOIN guesses g ON qs.id = g.session_id
+      GROUP BY qs.id, qs.quiz_id, qs.score, qs.created_at, qs.ended_at, u.user_uuid
+      ORDER BY qs.created_at DESC
     `)
 
     if (result.rows.length === 0) {
-      console.log('No quiz sessions found in database')
+      console.log('No quiz sessions found')
       await pool.end()
       return
     }
 
-    // Define CSV headers
-    const headers = [
-      'id',
-      'quiz_id',
-      'user_id',
-      'score',
-      'created_at',
-      'ended_at',
-      'adj_score_before_guess',
-      'adj_correct',
-      'adj_guesses',
-      'func_score_before_guess',
-      'func_correct',
-      'func_guesses',
-      'noun_score_before_guess',
-      'noun_correct',
-      'noun_guesses',
-      'num_score_before_guess',
-      'num_correct',
-      'num_guesses',
-      'propn_score_before_guess',
-      'propn_correct',
-      'propn_guesses',
-      'verb_score_before_guess',
-      'verb_correct',
-      'verb_guesses',
-    ]
+    // Create CSV
+    const headers = Object.keys(result.rows[0])
+    const csv = [
+      headers.join(','),
+      ...result.rows.map(row =>
+        headers.map(header => {
+          const value = row[header]
+          if (value === null || value === undefined) return ''
+          const str = String(value)
+          return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str
+        }).join(',')
+      )
+    ].join('\n')
 
-    // Helper function to escape CSV values
-    const escapeCSV = (value, header) => {
-      if (value === null || value === undefined) {
-        if (scoreColumns.has(header)) {
-          return 'NA'
-        }
-        return ''
-      }
-      const str = String(value)
-      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-        return `"${str.replace(/"/g, '""')}"` // Double quotes and wrap in quotes
-      }
-      return str
-    }
+    const filename = `quiz_sessions_export_${new Date().toISOString().split('T')[0]}.csv`
+    fs.writeFileSync(filename, csv)
 
-    // Build CSV content
-    let csvContent = headers.join(',') + '\n'
+    console.log(`\n✓ Exported ${result.rows.length} quiz sessions to ${filename}`)
+    console.log(`\nFirst 10 sessions (most recent):`)
+    console.table(result.rows.slice(0, 10))
 
-    result.rows.forEach((row) => {
-      const values = headers.map((header) => escapeCSV(row[header], header))
-      csvContent += values.join(',') + '\n'
-    })
-
-    // Write to file
-    const exportDir = path.join(__dirname, '..')
-    const fileName = 'quiz_sessions_export.csv'
-    const filePath = path.join(exportDir, fileName)
-
-    fs.writeFileSync(filePath, csvContent, 'utf-8')
-    console.log(`✅ Exported ${result.rows.length} quiz sessions to ${filePath}`)
-
-  } catch (err) {
-    console.error('Error exporting quiz sessions:', err)
-  } finally {
     await pool.end()
+  } catch (err) {
+    console.error('Error:', err.message)
+    await pool.end()
+    process.exit(1)
   }
 }
 
-// Run the export
 exportQuizSessionsToCSV()
