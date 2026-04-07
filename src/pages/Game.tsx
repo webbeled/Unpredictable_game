@@ -201,7 +201,6 @@ export default function Game() {
                 body: JSON.stringify({
                   session_id: data.id,
                   quiz_id: randomEntry?.id,
-                  created_at: quizStartedAt.current,
                 }),
               }).catch((err) => console.error('Failed to attach session to guesses:', err))
             } catch (err) {

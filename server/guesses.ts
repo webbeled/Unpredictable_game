@@ -64,9 +64,9 @@ router.post('/', async (req: Request, res: Response) => {
 
 // Attach session to previously logged guesses for a quiz
 router.post('/attach-session', async (req: Request, res: Response) => {
-  const { session_id, quiz_id, created_at } = req.body
-  if (!session_id || !quiz_id || typeof created_at === 'undefined') {
-    res.status(400).json({ error: 'session_id, quiz_id and created_at are required' })
+  const { session_id, quiz_id } = req.body
+  if (!session_id || !quiz_id) {
+    res.status(400).json({ error: 'session_id and quiz_id are required' })
     return
   }
 
@@ -75,9 +75,8 @@ router.post('/attach-session', async (req: Request, res: Response) => {
       `UPDATE guesses
        SET session_id = $1
        WHERE quiz_id = $2
-         AND session_id IS NULL
-         AND ts >= $3`,
-      [session_id, quiz_id, created_at]
+         AND session_id IS NULL`,
+      [session_id, quiz_id]
     )
     res.json({ success: true })
   } catch (err) {
