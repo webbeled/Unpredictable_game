@@ -37,7 +37,7 @@ router.post('/register', async (req: Request, res: Response) => {
     try {
       await pool.query(
         'INSERT INTO users (email, password_hash, participant_code, gender, english_speaker, location) VALUES ($1, $2, $3, $4, $5, $6)',
-        [email, passwordHash, participantCode, gender || null, firstLanguageEnglish ?? null, null]
+        [email, passwordHash, participantCode, gender || null, firstLanguageEnglish ?? null, nationality || null]
       )
     } catch (err: unknown) {
       const pgErr = err as { code?: string; message?: string }
