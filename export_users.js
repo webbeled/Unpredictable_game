@@ -16,7 +16,7 @@ async function exportUsers() {
   try {
     const result = await pool.query(`
       SELECT 
-        COALESCE(u.user_uuid::text, 'no-uuid-' || u.id::text) as user_id,
+        u.user_uuid::text as user_id,
         u.id as internal_id,
         u.email,
         u.created_at,
@@ -25,7 +25,7 @@ async function exportUsers() {
         COUNT(DISTINCT CASE WHEN g.correct = true THEN g.id END) as correct_guesses,
         ROUND(AVG(qs.score)::numeric, 2) as avg_score
       FROM users u
-      LEFT JOIN quiz_sessions qs ON u.id = qs.user_id
+      LEFT JOIN quiz_sessions qs ON u.user_uuid = qs.user_id
       LEFT JOIN guesses g ON qs.id = g.session_id
       GROUP BY u.id, u.user_uuid, u.email, u.created_at
       ORDER BY u.id
