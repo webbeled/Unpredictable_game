@@ -36,8 +36,8 @@ router.post('/register', async (req: Request, res: Response) => {
     // Try with demographic fields first, fall back to basic fields if columns don't exist
     try {
       await pool.query(
-        'INSERT INTO users (email, password_hash, participant_code, nationality, gender, first_language_is_english) VALUES ($1, $2, $3, $4, $5, $6)',
-        [email, passwordHash, participantCode, nationality || null, gender || null, firstLanguageEnglish ?? null]
+        'INSERT INTO users (email, password_hash, participant_code, gender, english_speaker, location) VALUES ($1, $2, $3, $4, $5, $6)',
+        [email, passwordHash, participantCode, gender || null, firstLanguageEnglish ?? null, null]
       )
     } catch (err: unknown) {
       const pgErr = err as { code?: string; message?: string }
@@ -92,9 +92,9 @@ router.post('/login', async (req: Request, res: Response) => {
       id: user.user_uuid, 
       email: user.email, 
       participant_code: user.participant_code ?? null,
-      nationality: user.nationality ?? null,
       gender: user.gender ?? null,
-      first_language_is_english: user.first_language_is_english ?? null,
+      english_speaker: user.english_speaker ?? null,
+      location: user.location ?? null,
     })
   } catch (err) {
     console.error('Login error:', err)
