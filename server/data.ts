@@ -40,14 +40,10 @@ let allEntries: FullEntry[] = [];
 let entryMap: Map<string, FullEntry> = new Map();
 
 /**
- * Generate a unique ID for an entry
+ * Format an ID from CSV (ensures it's a string)
  */
-function generateId(fileName: string, sheetName: string, rowIndex: number): string {
-  const data = `${fileName}:${sheetName}:${rowIndex}`;
-  const h = crypto.createHash('sha256').update(data).digest('hex');
-  // Format as a deterministic UUID v4 (version bits = 4, variant bits = 8/9/a/b)
-  const variant = ['8', '9', 'a', 'b'][parseInt(h[16], 16) & 3];
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${variant}${h.slice(17, 20)}-${h.slice(20, 32)}`;
+function formatId(csvId: any): string {
+  return String(csvId).trim();
 }
 
 /**
@@ -68,7 +64,8 @@ export function loadData(): Record<string, SheetData> {
       for (const [sheetName, sheetData] of Object.entries(fileData)) {
         sheetData.forEach((rowData, rowIndex) => {
           const annotate = rowData.annotate || rowData.Annotate || rowData.annotation || rowData.text || JSON.stringify(rowData);
-          const id = generateId(fileName, sheetName, rowIndex);
+          // Use ID from CSV if available, otherwise fall back to row index as string
+          const id = rowData.ID ? formatId(rowData.ID) : String(rowIndex);
 
           const entry: FullEntry = {
             fileName,
@@ -100,7 +97,7 @@ export function getRandomQuiz(): QuizEntry {
   }
 
   const randomEntry = allEntries[Math.floor(Math.random() * allEntries.length)];
-  const id = generateId(randomEntry.fileName, randomEntry.sheetName, randomEntry.rowIndex);
+  const id = randomEntry.rowData.ID ? formatId(randomEntry.rowData.ID) : String(randomEntry.rowIndex);
 
   return {
     id,

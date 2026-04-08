@@ -1,0 +1,21 @@
+alphanumeric_id,user_id,email,gender,english_speaker,location,account_created_ms,account_created_readable,total_sessions,total_guesses,correct_guesses,avg_score
+80021c8e-774b-477d-bbd3-3105187c72cd,24,lucysam@gmail.com,male,true,,1775594942000,Tue Apr 07 2026 22:49:02 GMT+0200 (heure d’été d’Europe centrale),1,1,1,100.00
+5f415d90-6e2f-4dae-a16b-e8da9cf84ec1,23,Davidpeters@gmail.com,,,,1775594411000,Tue Apr 07 2026 22:40:10 GMT+0200 (heure d’été d’Europe centrale),1,1,1,100.00
+31046340-bbfb-4b72-b964-849c99a33d93,22,jamiemichaels@gmail.com,,,,1775589631000,Tue Apr 07 2026 21:20:30 GMT+0200 (heure d’été d’Europe centrale),3,6,6,66.67
+284c6469-7075-40bf-9ce6-d002c339670b,21,jackson@gmail.com,,,,1775585743000,Tue Apr 07 2026 20:15:43 GMT+0200 (heure d’été d’Europe centrale),2,5,8,200.00
+e104fced-490c-44ab-b76a-8adf237e35f6,20,michael212@yahoo.com,,,,1775571948000,Tue Apr 07 2026 16:25:48 GMT+0200 (heure d’été d’Europe centrale),22,22,176,136.36
+b30e5855-cec0-46bf-8ab4-d499e1173e37,19,dhhdjd@gmail.com,,,,1775265886000,Sat Apr 04 2026 03:24:46 GMT+0200 (heure d’été d’Europe centrale),1,12,5,500.00
+98606495-2cc8-4419-b43b-42fda0faa567,18,rando@rando.ran,,,,1775057348000,Wed Apr 01 2026 17:29:07 GMT+0200 (heure d’été d’Europe centrale),3,2,3,33.33
+250df043-f78d-4871-8ae0-db2cabe76cbf,17,jamielewis@gmail.com,,,,1775035193000,Wed Apr 01 2026 11:19:53 GMT+0200 (heure d’été d’Europe centrale),2,12,2,50.00
+46e251ff-48dc-41cc-b9c3-96d5b2aa482b,16,simonkearey@gmail.com,,,,1774863999000,Mon Mar 30 2026 11:46:39 GMT+0200 (heure d’été d’Europe centrale),3,0,0,133.33
+863f2747-4549-4488-9b00-58f434fc393b,14,michael4@gmail.com,,,,1774398567000,Wed Mar 25 2026 01:29:27 GMT+0100 (heure normale d’Europe centrale),7,0,0,0.00
+38e3297f-b6c2-492b-abb4-4ded893c04b3,12,cascino.carlotta@gmail.com,,,,1774272104000,Mon Mar 23 2026 14:21:43 GMT+0100 (heure normale d’Europe centrale),0,0,0,
+4d2f3c13-abbe-4126-952e-5015c3d845a0,11,alexandre.bluet@gmail.com,,,,1774271860000,Mon Mar 23 2026 14:17:39 GMT+0100 (heure normale d’Europe centrale),14,0,0,228.57
+a477a001-f8e0-4632-81b7-e717f6f8dcbc,10,matildesciortino@gmail.com,,,,1774271823000,Mon Mar 23 2026 14:17:03 GMT+0100 (heure normale d’Europe centrale),0,0,0,
+7d868572-ab0c-4185-9eeb-d7c58e784b79,9,michael@gmail.com,,,,1773793939000,Wed Mar 18 2026 01:32:19 GMT+0100 (heure normale d’Europe centrale),3,0,0,0.00
+997001d3-c73f-4dbe-92e0-3bcfdb306dd3,8,alf.drummond@gmail.com,,,,1773756004000,Tue Mar 17 2026 15:00:04 GMT+0100 (heure normale d’Europe centrale),13,0,0,200.00
+606ba8c2-9607-472e-acf7-434502620aa4,6,morin.olivier@pm.me,,,,1773739358000,Tue Mar 17 2026 10:22:37 GMT+0100 (heure normale d’Europe centrale),13,0,0,138.46
+4bd82b0d-057a-4ce6-a8c2-b8e2f782b208,4,ryota.fuwa.1428@gmail.com,,,,1773655639000,Mon Mar 16 2026 11:07:19 GMT+0100 (heure normale d’Europe centrale),0,0,0,
+e0c6090e-4ac9-496e-a818-fcb313cf23ee,3,joannekearey@yahoo.co.uk,,,,1773590549000,Sun Mar 15 2026 17:02:28 GMT+0100 (heure normale d’Europe centrale),7,0,0,200.00
+77beead1-b563-46df-9247-5cdef7978c97,2,ambre.dumas31@gmail.com,,,,1773584643000,Sun Mar 15 2026 15:24:02 GMT+0100 (heure normale d’Europe centrale),127,0,0,8.66
+6a5a2938-bb01-4ed0-a69c-24c19a057866,1,okearey@yahoo.com,,,,1773584381000,Sun Mar 15 2026 15:19:41 GMT+0100 (heure normale d’Europe centrale),106,69,954,60.38
