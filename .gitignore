@@ -19,7 +19,9 @@ scripts/export_*.js
 scripts/generate_*.js
 scripts/test_*.js
 
-# Data exports and lock files
+# Data exports and lock files - keep these private
+*.csv
+!src/assets/data/*.csv
 data/*.csv
 data/.~lock*
 
