@@ -19,6 +19,7 @@ import {
   ToggleButtonGroup,
 } from '@mui/material'
 import { useAuth } from '../contexts/AuthContext'
+import ConsentModal from '../components/ConsentModal'
 
 export default function Auth() {
   const [tab, setTab] = useState(0)
@@ -26,9 +27,12 @@ export default function Auth() {
   const [password, setPassword] = useState('')
   const [nationality, setNationality] = useState('')
   const [gender, setGender] = useState('')
+  const [age, setAge] = useState('')
   const [firstLanguageEnglish, setFirstLanguageEnglish] = useState<boolean | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showConsentModal, setShowConsentModal] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
   const { login, register } = useAuth()
   const navigate = useNavigate()
 
@@ -39,13 +43,57 @@ export default function Auth() {
     try {
       if (tab === 0) {
         await login(email, password)
+        navigate('/quiz')
       } else {
-        // For registration, include the demographic fields
-        await register(email, password, nationality, gender, firstLanguageEnglish)
+        // For registration, show consent modal instead of immediately logging in
+        setIsRegistering(true)
+        await register(email, password, nationality, gender, firstLanguageEnglish, age)
+        setShowConsentModal(true)
       }
-      navigate('/quiz')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setLoading(false)
+      setIsRegistering(false)
+    }
+  }
+
+  const handleConsentAgree = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/auth/consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, consent: 1 }),
+      })
+      if (!response.ok) throw new Error('Failed to save consent')
+      setShowConsentModal(false)
+      await login(email, password)
+      navigate('/quiz')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save consent')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleConsentDisagree = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/auth/consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, consent: 0 }),
+      })
+      if (!response.ok) throw new Error('Failed to save consent')
+      setShowConsentModal(false)
+      // User disagreed but can still use the game or be logged out
+      // Redirecting to login for now
+      setTab(0)
+      setEmail('')
+      setPassword('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save consent')
     } finally {
       setLoading(false)
     }
@@ -324,6 +372,16 @@ export default function Auth() {
                 </Select>
               </FormControl>
 
+              <TextField
+                fullWidth
+                type="number"
+                label="Age"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                inputProps={{ min: 5, max: 120 }}
+                required
+              />
+
               <FormControl component="fieldset" fullWidth>
                 <FormLabel component="legend" sx={{ mb: 2, fontWeight: 600 }}>Gender</FormLabel>
                 <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-around' }}>
@@ -334,19 +392,19 @@ export default function Auth() {
                       py: 2.5,
                       px: 2,
                       border: '2px solid',
-                      borderColor: gender === 'male' ? '#1976d2' : '#ccc',
+                      borderColor: gender === 'male' ? '#333' : '#ccc',
                       borderRadius: 1,
                       cursor: 'pointer',
                       textAlign: 'center',
                       transition: 'all 0.2s ease',
-                      backgroundColor: gender === 'male' ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
+                      backgroundColor: gender === 'male' ? 'rgba(0, 0, 0, 0.04)' : 'transparent',
                       '&:hover': {
-                        borderColor: '#1976d2',
-                        backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                        borderColor: '#333',
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
                       },
                     }}
                   >
-                    <Box sx={{ fontSize: '32px', color: '#1976d2', mb: 1 }}>♂</Box>
+                    <Box sx={{ fontSize: '32px', color: '#333', mb: 1 }}>♂</Box>
                     <Typography sx={{ fontSize: '14px', fontWeight: gender === 'male' ? 600 : 400 }}>Male</Typography>
                   </Box>
                   
@@ -357,43 +415,43 @@ export default function Auth() {
                       py: 2.5,
                       px: 2,
                       border: '2px solid',
-                      borderColor: gender === 'female' ? '#c2185b' : '#ccc',
+                      borderColor: gender === 'female' ? '#333' : '#ccc',
                       borderRadius: 1,
                       cursor: 'pointer',
                       textAlign: 'center',
                       transition: 'all 0.2s ease',
-                      backgroundColor: gender === 'female' ? 'rgba(194, 24, 91, 0.08)' : 'transparent',
+                      backgroundColor: gender === 'female' ? 'rgba(0, 0, 0, 0.04)' : 'transparent',
                       '&:hover': {
-                        borderColor: '#c2185b',
-                        backgroundColor: 'rgba(194, 24, 91, 0.08)',
+                        borderColor: '#333',
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
                       },
                     }}
                   >
-                    <Box sx={{ fontSize: '32px', color: '#c2185b', mb: 1 }}>♀</Box>
+                    <Box sx={{ fontSize: '32px', color: '#333', mb: 1 }}>♀</Box>
                     <Typography sx={{ fontSize: '14px', fontWeight: gender === 'female' ? 600 : 400 }}>Female</Typography>
                   </Box>
                   
                   <Box
-                    onClick={() => setGender('neither')}
+                    onClick={() => setGender('other')}
                     sx={{
                       flex: 1,
                       py: 2.5,
                       px: 2,
                       border: '2px solid',
-                      borderColor: gender === 'neither' ? '#666' : '#ccc',
+                      borderColor: gender === 'other' ? '#333' : '#ccc',
                       borderRadius: 1,
                       cursor: 'pointer',
                       textAlign: 'center',
                       transition: 'all 0.2s ease',
-                      backgroundColor: gender === 'neither' ? 'rgba(0, 0, 0, 0.04)' : 'transparent',
+                      backgroundColor: gender === 'other' ? 'rgba(0, 0, 0, 0.04)' : 'transparent',
                       '&:hover': {
-                        borderColor: '#666',
+                        borderColor: '#333',
                         backgroundColor: 'rgba(0, 0, 0, 0.04)',
                       },
                     }}
                   >
-                    <Box sx={{ fontSize: '32px', color: '#666', mb: 1 }}>⊕</Box>
-                    <Typography sx={{ fontSize: '14px', fontWeight: gender === 'neither' ? 600 : 400 }}>Neither</Typography>
+                    <Box sx={{ fontSize: '32px', color: '#333', mb: 1 }}>⊕</Box>
+                    <Typography sx={{ fontSize: '14px', fontWeight: gender === 'other' ? 600 : 400 }}>Other</Typography>
                   </Box>
                 </Box>
               </FormControl>
@@ -431,11 +489,18 @@ export default function Auth() {
             </Box>
           )}
           
-          <Button type="submit" variant="contained" fullWidth disabled={loading || (tab === 1 && (!nationality || !gender || firstLanguageEnglish === null))}>
+          <Button type="submit" variant="contained" fullWidth disabled={loading || (tab === 1 && (!nationality || !gender || firstLanguageEnglish === null || !age || parseInt(age) < 5 || parseInt(age) > 120))}>
             {tab === 0 ? 'Login' : 'Register'}
           </Button>
         </Box>
       </Box>
+
+      <ConsentModal 
+        open={showConsentModal}
+        onAgree={handleConsentAgree}
+        onDisagree={handleConsentDisagree}
+        loading={loading}
+      />
     </Container>
   )
 }

@@ -19,6 +19,10 @@ scripts/export_*.js
 scripts/generate_*.js
 scripts/test_*.js
 
+# Data exports and lock files
+data/*.csv
+data/.~lock*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -14,8 +14,8 @@ function generateParticipantCode() {
 }
 
 router.post('/register', async (req: Request, res: Response) => {
-  const { email, password, nationality, gender, firstLanguageEnglish } = req.body
-  console.log('Register request:', { email, nationality, gender, firstLanguageEnglish })
+  const { email, password, nationality, gender, firstLanguageEnglish, age } = req.body
+  console.log('Register request:', { email, nationality, gender, firstLanguageEnglish, age })
   if (!email || !password) {
     res.status(400).json({ error: 'Email and password are required' })
     return
@@ -37,8 +37,8 @@ router.post('/register', async (req: Request, res: Response) => {
     // Try with demographic fields first, fall back to basic fields if columns don't exist
     try {
       await pool.query(
-        'INSERT INTO users (email, password_hash, participant_code, gender, english_speaker, location) VALUES ($1, $2, $3, $4, $5, $6)',
-        [email, passwordHash, participantCode, gender || null, firstLanguageEnglish ?? null, nationality || null]
+        'INSERT INTO users (email, password_hash, participant_code, gender, english_speaker, location, age) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [email, passwordHash, participantCode, gender || null, firstLanguageEnglish ?? null, nationality || null, age ? parseInt(age) : null]
       )
     } catch (err: unknown) {
       const pgErr = err as { code?: string; message?: string }
@@ -135,6 +135,25 @@ router.get('/me', (req: Request, res: Response) => {
       })
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' })
+  }
+})
+
+router.post('/consent', async (req: Request, res: Response) => {
+  const { email, consent } = req.body
+  if (!email || typeof consent !== 'number') {
+    res.status(400).json({ error: 'Email and consent are required' })
+    return
+  }
+  try {
+    const result = await pool.query('UPDATE users SET consent = $1 WHERE email = $2', [consent, email])
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: 'User not found' })
+      return
+    }
+    res.json({ message: 'Consent recorded' })
+  } catch (err) {
+    console.error('Consent error:', err)
+    res.status(500).json({ error: 'Internal server error' })
   }
 })
 

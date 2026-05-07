@@ -200,7 +200,7 @@ function StatsSection() {
     '3333': '#4CAF50', // Nouns - green
     '4444': '#FFE66D', // Numbers - yellow
     '5555': '#C7CEEA', // Proper nouns - lavender
-    '6666': '#A78BFA', // Verbs - purple
+    '6666': '#FFA500', // Verbs - orange
   }
 
   const chartData: { 
