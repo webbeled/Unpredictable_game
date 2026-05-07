@@ -40,7 +40,7 @@ export default function Settings() {
 
   const handleReset = () => {
     resetConfig()
-    setTimerDuration(120)
+    setTimerDuration(90)
     setSaveMessage('Settings reset to defaults')
     setTimeout(() => setSaveMessage(null), 3000)
   }

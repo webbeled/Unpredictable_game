@@ -32,7 +32,6 @@ export default function Auth() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showConsentModal, setShowConsentModal] = useState(false)
-  const [isRegistering, setIsRegistering] = useState(false)
   const { login, register } = useAuth()
   const navigate = useNavigate()
 
@@ -46,7 +45,6 @@ export default function Auth() {
         navigate('/quiz')
       } else {
         // For registration, show consent modal instead of immediately logging in
-        setIsRegistering(true)
         await register(email, password, nationality, gender, firstLanguageEnglish, age)
         setShowConsentModal(true)
       }
