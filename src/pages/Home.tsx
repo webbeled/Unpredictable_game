@@ -1,10 +1,10 @@
-import { Box, Button, Typography, Paper, Card, Skeleton, Container } from '@mui/material'
+import { Box, Button, Typography, Paper, Card, Skeleton, Container, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import NavBar from '../components/NavBar'
 import anrLogo from '../assets/logos/ANR-cop.png'
-import culturelabLogo from '../assets/logos/CultureLab-Blanc.webp'
+import culturelabLogo from '../assets/logos/culture.png'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import {
@@ -472,6 +472,7 @@ const CustomBlockShape = (props: CustomBlockShapeProps) => {
 export default function Home() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const [contactDialogOpen, setContactDialogOpen] = useState(false)
 
   return (
     <>
@@ -585,7 +586,7 @@ export default function Home() {
             src={anrLogo}
             alt="ANR"
             style={{
-              height: 32,
+              height: 56,
               width: 'auto',
             }}
           />
@@ -594,7 +595,7 @@ export default function Home() {
             src={culturelabLogo}
             alt="CultureLab"
             style={{
-              height: 32,
+              height: 56,
               width: 'auto',
               filter: 'drop-shadow(0px 0px 0.8px #000)',
               paintOrder: 'stroke',
@@ -602,7 +603,57 @@ export default function Home() {
               strokeWidth: '0.5px',
             }}
           />
+          <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
+          <Typography
+            component="button"
+            onClick={() => setContactDialogOpen(true)}
+            sx={{
+              fontSize: '0.875rem',
+              color: '#666',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              border: 'none',
+              background: 'none',
+              padding: 0,
+              fontFamily: 'inherit',
+              '&:hover': {
+                color: '#333',
+              },
+            }}
+          >
+            Contact Us
+          </Typography>
         </Box>
+
+        {/* Contact Dialog */}
+        <Dialog
+          open={contactDialogOpen}
+          onClose={() => setContactDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{ fontSize: '1.25rem', fontWeight: 600 }}>Contact Us</DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+            <Typography sx={{ fontSize: '0.95rem', lineHeight: 1.6, color: '#555' }}>
+              To reach the team about anything, including questions regarding how your data is handled, or whether you would like to withdraw your consent to participate in our research, please contact:
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: '1rem',
+                fontWeight: 600,
+                mt: 2,
+                color: '#333',
+              }}
+            >
+              newsgap@pm.me
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setContactDialogOpen(false)} variant="contained" sx={{ bgcolor: '#333' }}>
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </>
   )
