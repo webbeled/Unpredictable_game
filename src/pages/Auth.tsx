@@ -52,7 +52,6 @@ export default function Auth() {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
-      setIsRegistering(false)
     }
   }
 
