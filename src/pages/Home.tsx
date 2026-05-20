@@ -2,6 +2,7 @@ import { Box, Button, Typography, Paper, Card, Skeleton, Container, Dialog, Dial
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useLang } from '../contexts/LangContext'
 import NavBar from '../components/NavBar'
 import anrLogo from '../assets/logos/ANR-cop.png'
 import culturelabLogo from '../assets/logos/culture.png'
@@ -17,6 +18,39 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
+const homeTranslations = {
+  en: {
+    daily: 'THE DAILY',
+    startQuiz: 'Start Quiz',
+    contactUs: 'Contact Us',
+    contactTitle: 'Contact Us',
+    contactBody: 'To reach the team about anything, including questions regarding how your data is handled, or whether you would like to withdraw your consent to participate in our research, please contact:',
+    close: 'Close',
+    noGames: 'No games yet — play your first quiz to see your stats!',
+    games: 'Games',
+    best: 'Best',
+    average: 'Average',
+    latest: 'Latest',
+    progression: 'Your Progression',
+    attentionHeader: 'Attention Clever Readers',
+  },
+  fr: {
+    daily: 'LE QUOTIDIEN',
+    startQuiz: 'Commencer le quiz',
+    contactUs: 'Nous contacter',
+    contactTitle: 'Nous contacter',
+    contactBody: "Pour contacter l'équipe pour toute question, notamment concernant la gestion de vos données ou si vous souhaitez retirer votre consentement à participer à notre recherche, veuillez contacter :",
+    close: 'Fermer',
+    noGames: "Pas encore de parties — jouez votre premier quiz pour voir vos statistiques !",
+    games: 'Parties',
+    best: 'Meilleur',
+    average: 'Moyenne',
+    latest: 'Dernier',
+    progression: 'Votre progression',
+    attentionHeader: 'Attention Lecteurs Perspicaces',
+  },
+}
+
 interface QuizSession {
   id?: number
   quiz_id: string
@@ -30,22 +64,8 @@ type AnimatedTextPart = {
   color: string
 }
 
-function useUserStats() {
-  return useQuery<QuizSession[]>({
-    queryKey: ['quiz-sessions'],
-    queryFn: async () => {
-      const res = await fetch('/api/quiz-sessions', { credentials: 'include' })
-      if (!res.ok) throw new Error('Failed to fetch sessions')
-      return res.json()
-    },
-  })
-}
-
-function AnimatedNewspaper() {
-  const [displayText, setDisplayText] = useState<Array<string | AnimatedTextPart>>([])
-  const [isTyping, setIsTyping] = useState(true)
-
-  const maskedArticle: AnimatedTextPart[] = [
+const maskedArticleText = {
+  en: [
     { text: 'Certain', color: '' },
     { text: ' ', color: '' },
     { text: 'words', color: '' },
@@ -60,7 +80,44 @@ function AnimatedNewspaper() {
     { text: ' earns you ', color: '' },
     { text: '______', color: '#C7CEEA' },
     { text: '. Good luck!!', color: '' },
-  ]
+  ],
+  fr: [
+    { text: 'Certains mots ont été supprimés de cet ', color: '' },
+    { text: '_______', color: '#FF6B6B' },
+    { text: '. Pouvez-vous ', color: '' },
+    { text: '_____', color: '#4ECDC4' },
+    { text: " deviner ce qu'ils sont ? Utilisez les indices colorés et votre ", color: '' },
+    { text: '_________', color: '#4CAF50' },
+    { text: ' pour remplir les blancs avant la fin du temps. Chaque bonne ', color: '' },
+    { text: '______', color: '#FFE66D' },
+    { text: ' vous rapporte ', color: '' },
+    { text: '______', color: '#C7CEEA' },
+    { text: '. Bonne chance !!', color: '' },
+  ],
+}
+
+function useUserStats() {
+  return useQuery<QuizSession[]>({
+    queryKey: ['quiz-sessions'],
+    queryFn: async () => {
+      const res = await fetch('/api/quiz-sessions', { credentials: 'include' })
+      if (!res.ok) throw new Error('Failed to fetch sessions')
+      return res.json()
+    },
+  })
+}
+
+function AnimatedNewspaper() {
+  const { lang } = useLang()
+  const t = homeTranslations[lang]
+  const maskedArticle = maskedArticleText[lang]
+  const [displayText, setDisplayText] = useState<Array<string | AnimatedTextPart>>([])
+  const [isTyping, setIsTyping] = useState(true)
+
+  useEffect(() => {
+    setDisplayText([])
+    setIsTyping(true)
+  }, [lang])
 
   useEffect(() => {
     if (!isTyping) return
@@ -95,7 +152,7 @@ function AnimatedNewspaper() {
     }, 30)
 
     return () => clearInterval(timer)
-  }, [isTyping])
+  }, [isTyping, maskedArticle])
 
   return (
     <Paper
@@ -124,7 +181,7 @@ function AnimatedNewspaper() {
           fontWeight: 700,
         }}
       >
-        Attention Clever Readers
+        {t.attentionHeader}
       </Typography>
       <Box
         sx={{
@@ -140,7 +197,6 @@ function AnimatedNewspaper() {
           if (typeof item === 'string') {
             return <span key={idx}>{item}</span>
           }
-
           return (
             <span
               key={idx}
@@ -171,6 +227,8 @@ function AnimatedNewspaper() {
 
 function StatsSection() {
   const { data: sessions, isLoading } = useUserStats()
+  const { lang } = useLang()
+  const t = homeTranslations[lang]
 
   if (isLoading) {
     return (
@@ -183,7 +241,7 @@ function StatsSection() {
   if (!sessions || sessions.length === 0) {
     return (
       <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', mt: 3, color: '#666' }}>
-        No games yet — play your first quiz to see your stats!
+        {t.noGames}
       </Typography>
     )
   }
@@ -192,25 +250,23 @@ function StatsSection() {
   const total = sessions.length
   const average = Math.round((sessions.reduce((sum, s) => sum + s.score, 0) / sessions.length) * 10) / 10
 
-  // Compute a running rating like chess.com Elo:
-  // Start at 300, move toward each score with a K-factor that shrinks as you play more
   const POSColors: Record<string, string> = {
-    '1111': '#FF6B6B', // Adjectives - red
-    '2222': '#4ECDC4', // Closed class/Function words - teal
-    '3333': '#4CAF50', // Nouns - green
-    '4444': '#FFE66D', // Numbers - yellow
-    '5555': '#C7CEEA', // Proper nouns - lavender
-    '6666': '#FFA500', // Verbs - orange
+    '1111': '#FF6B6B',
+    '2222': '#4ECDC4',
+    '3333': '#4CAF50',
+    '4444': '#FFE66D',
+    '5555': '#C7CEEA',
+    '6666': '#FFA500',
   }
 
-  const chartData: { 
+  const chartData: {
     game: number
     score: number
     date: string
     blocks: { color: string }[]
-    sessionId?: number 
+    sessionId?: number
   }[] = []
-  
+
   sessions.forEach((s, i) => {
     const ts = typeof s.created_at === 'string' ? Number(s.created_at) : s.created_at
     const d = ts ? new Date(Number(ts)) : null
@@ -222,10 +278,9 @@ function StatsSection() {
       dateStr = `${datePart} ${timePart}.${ms}`
     }
 
-    // Create colored blocks for each correct guess
     const blocks: { color: string }[] = []
     const correctGuesses = (s as any).correct_guesses || []
-    
+
     if (Array.isArray(correctGuesses) && correctGuesses.length > 0) {
       correctGuesses.forEach((guess: { part_of_speech: string }) => {
         const pos = guess.part_of_speech || ''
@@ -234,7 +289,6 @@ function StatsSection() {
       })
     }
 
-    // If no correct guesses, show gray block for zero score
     if (blocks.length === 0) {
       blocks.push({ color: '#ccc' })
     }
@@ -252,132 +306,49 @@ function StatsSection() {
   return (
     <Box sx={{ width: '100%' }}>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 4 }}>
-        <Card
-          sx={{
-            px: 2.5,
-            py: 2.5,
-            borderRadius: 0,
-            background: '#fff',
-            border: '2px solid #000',
-            boxShadow: 'none',
-            textAlign: 'center',
-            transition: 'all 0.2s ease',
-            '&:hover': { 
-              boxShadow: '2px 2px 8px rgba(0,0,0,0.15)',
-              transform: 'translate(-1px, -1px)',
-            },
-          }}
-        >
-          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '28px', fontWeight: 'bold', color: '#000', letterSpacing: '-1px' }}>
-            {total}
-          </Typography>
-          <Box sx={{ height: '1px', background: '#000', my: 1.2, mx: 0 }} />
-          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '9px', color: '#333', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 500 }}>
-            Games
-          </Typography>
-        </Card>
-        <Card
-          sx={{
-            px: 2.5,
-            py: 2.5,
-            borderRadius: 0,
-            background: '#fff',
-            border: '2px solid #000',
-            boxShadow: 'none',
-            textAlign: 'center',
-            transition: 'all 0.2s ease',
-            '&:hover': { 
-              boxShadow: '2px 2px 8px rgba(0,0,0,0.15)',
-              transform: 'translate(-1px, -1px)',
-            },
-          }}
-        >
-          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '28px', fontWeight: 'bold', color: '#000', letterSpacing: '-1px' }}>
-            {best}
-          </Typography>
-          <Box sx={{ height: '1px', background: '#000', my: 1.2, mx: 0 }} />
-          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '9px', color: '#333', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 500 }}>
-            Best
-          </Typography>
-        </Card>
-        <Card
-          sx={{
-            px: 2.5,
-            py: 2.5,
-            borderRadius: 0,
-            background: '#fff',
-            border: '2px solid #000',
-            boxShadow: 'none',
-            textAlign: 'center',
-            transition: 'all 0.2s ease',
-            '&:hover': { 
-              boxShadow: '2px 2px 8px rgba(0,0,0,0.15)',
-              transform: 'translate(-1px, -1px)',
-            },
-          }}
-        >
-          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '28px', fontWeight: 'bold', color: '#000', letterSpacing: '-1px' }}>
-            {average}
-          </Typography>
-          <Box sx={{ height: '1px', background: '#000', my: 1.2, mx: 0 }} />
-          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '9px', color: '#333', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 500 }}>
-            Average
-          </Typography>
-        </Card>
-        <Card
-          sx={{
-            px: 2.5,
-            py: 2.5,
-            borderRadius: 0,
-            background: '#000',
-            border: '2px solid #000',
-            boxShadow: 'none',
-            textAlign: 'center',
-            transition: 'all 0.2s ease',
-            '&:hover': { 
-              boxShadow: '2px 2px 8px rgba(0,0,0,0.25)',
-              transform: 'translate(-1px, -1px)',
-            },
-          }}
-        >
-          <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '28px', fontWeight: 'bold', color: '#fff', letterSpacing: '-1px' }}>
-            {sessions[sessions.length - 1].score}
-          </Typography>
-          <Box sx={{ height: '1px', background: '#fff', my: 1.2, mx: 0 }} />
-          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '9px', color: '#e0e0e0', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 500 }}>
-            Latest
-          </Typography>
-        </Card>
+        {[
+          { value: total, label: t.games, dark: false },
+          { value: best, label: t.best, dark: false },
+          { value: average, label: t.average, dark: false },
+          { value: sessions[sessions.length - 1].score, label: t.latest, dark: true },
+        ].map(({ value, label, dark }) => (
+          <Card
+            key={label}
+            sx={{
+              px: 2.5, py: 2.5, borderRadius: 0,
+              background: dark ? '#000' : '#fff',
+              border: '2px solid #000',
+              boxShadow: 'none',
+              textAlign: 'center',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                boxShadow: '2px 2px 8px rgba(0,0,0,0.15)',
+                transform: 'translate(-1px, -1px)',
+              },
+            }}
+          >
+            <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '28px', fontWeight: 'bold', color: dark ? '#fff' : '#000', letterSpacing: '-1px' }}>
+              {value}
+            </Typography>
+            <Box sx={{ height: '1px', background: dark ? '#fff' : '#000', my: 1.2, mx: 0 }} />
+            <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '9px', color: dark ? '#e0e0e0' : '#333', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 500 }}>
+              {label}
+            </Typography>
+          </Card>
+        ))}
       </Box>
 
       <Paper
         elevation={0}
-        sx={{
-          p: 3,
-          borderRadius: 0,
-          border: '2px solid #000',
-          background: '#fafafa',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-        }}
+        sx={{ p: 3, borderRadius: 0, border: '2px solid #000', background: '#fafafa', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
       >
         <Typography
-          sx={{
-            fontFamily: 'Cormorant Garamond, serif',
-            fontSize: '13px',
-            color: '#333',
-            mb: 2.5,
-            letterSpacing: '1.5px',
-            textTransform: 'uppercase',
-            fontWeight: 500,
-          }}
+          sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '13px', color: '#333', mb: 2.5, letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 500 }}
         >
-          Your Progression
+          {t.progression}
         </Typography>
         <ResponsiveContainer width="100%" height={total > 20 ? 320 : 220}>
-          <BarChart 
-            data={chartData} 
-            margin={{ top: 10, right: 10, left: -12, bottom: 10 }}
-          >
+          <BarChart data={chartData} margin={{ top: 10, right: 10, left: -12, bottom: 10 }}>
             <defs>
               <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#1a1a1a" stopOpacity={1} />
@@ -395,21 +366,9 @@ function StatsSection() {
               {...(total > 50 ? { domain: [1, 'dataMax'], tickCount: Math.min(10, Math.ceil(total / 10)) } : {})}
               interval={Math.max(0, Math.floor(total / 15))}
             />
-            <YAxis
-              tick={{ fontSize: 8, fill: '#888' }}
-              tickLine={false}
-              axisLine={false}
-              domain={[0, 600]}
-            />
+            <YAxis tick={{ fontSize: 8, fill: '#888' }} tickLine={false} axisLine={false} domain={[0, 600]} />
             <Tooltip
-              contentStyle={{
-                borderRadius: 0,
-                border: '1px solid #000',
-                boxShadow: '2px 2px 8px rgba(0,0,0,0.15)',
-                fontSize: 12,
-                backgroundColor: '#fff',
-                padding: '10px 12px',
-              }}
+              contentStyle={{ borderRadius: 0, border: '1px solid #000', boxShadow: '2px 2px 8px rgba(0,0,0,0.15)', fontSize: 12, backgroundColor: '#fff', padding: '10px 12px' }}
               formatter={(value) => String(value)}
               labelFormatter={(_label, payload) => {
                 const item = payload?.[0]?.payload as { date?: string; game?: number; score?: number } | undefined
@@ -441,7 +400,7 @@ interface CustomBlockShapeProps {
 const CustomBlockShape = (props: CustomBlockShapeProps) => {
   const { x = 0, y = 0, width = 0, height = 0, index = 0, chartData } = props
   const entry = chartData[index]
-  
+
   if (!entry || !entry.blocks.length) return null
 
   const numBlocks = entry.blocks.length
@@ -472,6 +431,8 @@ const CustomBlockShape = (props: CustomBlockShapeProps) => {
 export default function Home() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { lang, setLang } = useLang()
+  const t = homeTranslations[lang]
   const [contactDialogOpen, setContactDialogOpen] = useState(false)
 
   return (
@@ -501,7 +462,6 @@ export default function Home() {
           }}
         >
           <Box sx={{ textAlign: 'center' }}>
-
             <Typography
               sx={{
                 fontFamily: 'Cormorant Garamond, serif',
@@ -512,7 +472,7 @@ export default function Home() {
                 color: '#333',
               }}
             >
-              THE DAILY
+              {t.daily}
             </Typography>
 
             <Typography
@@ -543,14 +503,11 @@ export default function Home() {
                 border: '2px solid #000',
                 letterSpacing: '0.5px',
                 textTransform: 'uppercase',
-                '&:hover': {
-                  backgroundColor: '#fff',
-                  color: '#000',
-                },
+                '&:hover': { backgroundColor: '#fff', color: '#000' },
                 transition: 'all 0.3s ease',
               }}
             >
-              Start Quiz
+              {t.startQuiz}
             </Button>
           </Box>
 
@@ -565,7 +522,7 @@ export default function Home() {
           </Container>
         )}
 
-        {/* Footer with logos */}
+        {/* Footer */}
         <Box
           sx={{
             mt: 'auto',
@@ -577,31 +534,15 @@ export default function Home() {
             gap: 4,
             opacity: 0.55,
             transition: 'opacity 0.3s ease',
-            '&:hover': {
-              opacity: 0.75,
-            },
+            '&:hover': { opacity: 0.75 },
           }}
         >
-          <img
-            src={anrLogo}
-            alt="ANR"
-            style={{
-              height: 56,
-              width: 'auto',
-            }}
-          />
+          <img src={anrLogo} alt="ANR" style={{ height: 56, width: 'auto' }} />
           <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
           <img
             src={culturelabLogo}
             alt="CultureLab"
-            style={{
-              height: 56,
-              width: 'auto',
-              filter: 'drop-shadow(0px 0px 0.8px #000)',
-              paintOrder: 'stroke',
-              stroke: '#000',
-              strokeWidth: '0.5px',
-            }}
+            style={{ height: 56, width: 'auto', filter: 'drop-shadow(0px 0px 0.8px #000)' }}
           />
           <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
           <Typography
@@ -616,41 +557,51 @@ export default function Home() {
               background: 'none',
               padding: 0,
               fontFamily: 'inherit',
-              '&:hover': {
-                color: '#333',
-              },
+              '&:hover': { color: '#333' },
             }}
           >
-            Contact Us
+            {t.contactUs}
           </Typography>
+          <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
+          {/* Language toggle */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {(['en', 'fr'] as const).map((l) => (
+              <Box
+                key={l}
+                onClick={() => setLang(l)}
+                sx={{
+                  fontSize: '22px',
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                  borderRadius: '6px',
+                  p: '3px 6px',
+                  border: '2px solid',
+                  borderColor: lang === l ? '#555' : 'transparent',
+                  transition: 'border-color 0.2s ease',
+                  userSelect: 'none',
+                  '&:hover': { borderColor: lang === l ? '#555' : '#bbb' },
+                }}
+              >
+                {l === 'en' ? '🇬🇧' : '🇫🇷'}
+            </Box>
+            ))}
+          </Box>
         </Box>
 
         {/* Contact Dialog */}
-        <Dialog
-          open={contactDialogOpen}
-          onClose={() => setContactDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle sx={{ fontSize: '1.25rem', fontWeight: 600 }}>Contact Us</DialogTitle>
+        <Dialog open={contactDialogOpen} onClose={() => setContactDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontSize: '1.25rem', fontWeight: 600 }}>{t.contactTitle}</DialogTitle>
           <DialogContent sx={{ pt: 2 }}>
             <Typography sx={{ fontSize: '0.95rem', lineHeight: 1.6, color: '#555' }}>
-              To reach the team about anything, including questions regarding how your data is handled, or whether you would like to withdraw your consent to participate in our research, please contact:
+              {t.contactBody}
             </Typography>
-            <Typography
-              sx={{
-                fontSize: '1rem',
-                fontWeight: 600,
-                mt: 2,
-                color: '#333',
-              }}
-            >
+            <Typography sx={{ fontSize: '1rem', fontWeight: 600, mt: 2, color: '#333' }}>
               newsgap@pm.me
             </Typography>
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
             <Button onClick={() => setContactDialogOpen(false)} variant="contained" sx={{ bgcolor: '#333' }}>
-              Close
+              {t.close}
             </Button>
           </DialogActions>
         </Dialog>
