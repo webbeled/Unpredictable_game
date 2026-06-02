@@ -592,7 +592,7 @@ export default function Game() {
                   <Typography
                     sx={{
                       fontFamily: '"Cormorant Garamond", Georgia, serif',
-                      fontSize: '1.2rem',
+                      fontSize: { xs: '0.85rem', md: '1.2rem' },
                       fontWeight: 800,
                       letterSpacing: '0.15em',
                       color: '#000000',
@@ -605,7 +605,7 @@ export default function Game() {
                   <Typography
                     sx={{
                       fontFamily: '"Didot", "Playfair Display", Georgia, serif',
-                      fontSize: '2.8rem',
+                      fontSize: { xs: '2rem', md: '2.8rem' },
                       fontWeight: 900,
                       letterSpacing: '0.08em',
                       color: '#000000',
@@ -619,7 +619,7 @@ export default function Game() {
                   <Typography
                     sx={{
                       fontFamily: '"Cormorant Garamond", Georgia, serif',
-                      fontSize: '1.32rem',
+                      fontSize: { xs: '1rem', md: '1.32rem' },
                       fontWeight: 700,
                       letterSpacing: '0.1em',
                       color: timeRemaining <= 10 ? '#d32f2f' : '#666666',
@@ -809,7 +809,7 @@ export default function Game() {
                     row
                     value={selectedMask ?? ''}
                     onChange={(e) => setSelectedMask(e.target.value)}
-                    sx={{ gap: 2 }}
+                    sx={{ gap: { xs: 0.5, md: 2 }, flexWrap: 'wrap' }}
                   >
                     {Object.keys(MASK_LABELS)
                       .filter((code) => presentMasks.has(code))

@@ -305,7 +305,7 @@ function StatsSection() {
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 4 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: 2, mb: 4 }}>
         {[
           { value: total, label: t.games, dark: false },
           { value: best, label: t.best, dark: false },
@@ -480,7 +480,7 @@ export default function Home() {
             <Typography
               sx={{
                 fontFamily: 'Didot, Georgia, serif',
-                fontSize: '64px',
+                fontSize: { xs: '40px', md: '64px' },
                 fontWeight: 'bold',
                 fontStyle: 'italic',
                 letterSpacing: '1.5px',
@@ -528,25 +528,26 @@ export default function Home() {
         <Box
           sx={{
             mt: 'auto',
-            pt: 8,
+            pt: { xs: 4, md: 8 },
             pb: 2,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            gap: 4,
+            flexWrap: 'wrap',
+            gap: { xs: 2, md: 4 },
             opacity: 0.55,
             transition: 'opacity 0.3s ease',
             '&:hover': { opacity: 0.75 },
           }}
         >
           <img src={anrLogo} alt="ANR" style={{ height: 56, width: 'auto' }} />
-          <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
+          <Box sx={{ display: { xs: 'none', md: 'block' }, width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
           <img
             src={culturelabLogo}
             alt="CultureLab"
             style={{ height: 56, width: 'auto', filter: 'drop-shadow(0px 0px 0.8px #000)' }}
           />
-          <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
+          <Box sx={{ display: { xs: 'none', md: 'block' }, width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
           <Typography
             component="button"
             onClick={() => setContactDialogOpen(true)}
@@ -564,7 +565,7 @@ export default function Home() {
           >
             {t.contactUs}
           </Typography>
-          <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
+          <Box sx={{ display: { xs: 'none', md: 'block' }, width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
           {/* Language toggle */}
           <Box sx={{ display: 'flex', gap: 1 }}>
             {(['en', 'fr'] as const).map((l) => (
