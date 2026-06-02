@@ -3,6 +3,7 @@ import LogoutIcon from '@mui/icons-material/Logout'
 import HomeIcon from '@mui/icons-material/Home'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useLang } from '../contexts/LangContext'
 
 interface NavBarProps {
   score?: number
@@ -12,6 +13,7 @@ export default function NavBar({ score }: NavBarProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const { logout, user } = useAuth()
+  const { lang, setLang } = useLang()
   const isGamePage = location.pathname === '/quiz'
 
   const handleLogoClick = () => navigate('/')
@@ -87,6 +89,30 @@ export default function NavBar({ score }: NavBarProps) {
               {user.email}
             </Typography>
           )}
+        </Box>
+
+        {/* Right: language toggle */}
+        <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
+          {(['en', 'fr'] as const).map((l) => (
+            <Box
+              key={l}
+              onClick={() => setLang(l)}
+              sx={{
+                fontSize: '20px',
+                lineHeight: 1,
+                cursor: 'pointer',
+                borderRadius: '6px',
+                p: '3px 5px',
+                border: '2px solid',
+                borderColor: lang === l ? '#555' : 'transparent',
+                transition: 'border-color 0.2s ease',
+                userSelect: 'none',
+                '&:hover': { borderColor: lang === l ? '#555' : '#bbb' },
+              }}
+            >
+              {l === 'en' ? '🇬🇧' : '🇫🇷'}
+            </Box>
+          ))}
         </Box>
       </Toolbar>
     </AppBar>

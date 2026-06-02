@@ -431,7 +431,7 @@ const CustomBlockShape = (props: CustomBlockShapeProps) => {
 export default function Home() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { lang, setLang } = useLang()
+  const { lang } = useLang()
   const t = homeTranslations[lang]
   const [contactDialogOpen, setContactDialogOpen] = useState(false)
 
@@ -533,26 +533,25 @@ export default function Home() {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            flexWrap: 'wrap',
             gap: { xs: 2, md: 4 },
             opacity: 0.55,
             transition: 'opacity 0.3s ease',
             '&:hover': { opacity: 0.75 },
           }}
         >
-          <img src={anrLogo} alt="ANR" style={{ height: 56, width: 'auto' }} />
-          <Box sx={{ display: { xs: 'none', md: 'block' }, width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
+          <img src={anrLogo} alt="ANR" style={{ height: 'clamp(32px, 5vw, 56px)', width: 'auto' }} />
+          <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
           <img
             src={culturelabLogo}
             alt="CultureLab"
-            style={{ height: 56, width: 'auto', filter: 'drop-shadow(0px 0px 0.8px #000)' }}
+            style={{ height: 'clamp(32px, 5vw, 56px)', width: 'auto', filter: 'drop-shadow(0px 0px 0.8px #000)' }}
           />
-          <Box sx={{ display: { xs: 'none', md: 'block' }, width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
+          <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
           <Typography
             component="button"
             onClick={() => setContactDialogOpen(true)}
             sx={{
-              fontSize: '0.875rem',
+              fontSize: { xs: '0.75rem', md: '0.875rem' },
               color: '#666',
               textDecoration: 'underline',
               cursor: 'pointer',
@@ -560,35 +559,12 @@ export default function Home() {
               background: 'none',
               padding: 0,
               fontFamily: 'inherit',
+              whiteSpace: 'nowrap',
               '&:hover': { color: '#333' },
             }}
           >
             {t.contactUs}
           </Typography>
-          <Box sx={{ display: { xs: 'none', md: 'block' }, width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
-          {/* Language toggle */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {(['en', 'fr'] as const).map((l) => (
-              <Box
-                key={l}
-                onClick={() => setLang(l)}
-                sx={{
-                  fontSize: '22px',
-                  lineHeight: 1,
-                  cursor: 'pointer',
-                  borderRadius: '6px',
-                  p: '3px 6px',
-                  border: '2px solid',
-                  borderColor: lang === l ? '#555' : 'transparent',
-                  transition: 'border-color 0.2s ease',
-                  userSelect: 'none',
-                  '&:hover': { borderColor: lang === l ? '#555' : '#bbb' },
-                }}
-              >
-                {l === 'en' ? '🇬🇧' : '🇫🇷'}
-            </Box>
-            ))}
-          </Box>
         </Box>
 
         {/* Contact Dialog */}
