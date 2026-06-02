@@ -440,14 +440,17 @@ export default function Home() {
       <NavBar />
       <Box
         sx={{
-          minHeight: 'calc(100vh - 64px)',
+          height: 'calc(100vh - 64px)',
           backgroundColor: '#f5f5f5',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'flex-start',
+          overflowX: 'hidden',
+          overflowY: 'auto',
           py: 4,
-          px: 2,
+          px: { xs: 2, md: 8 },
+          boxSizing: 'border-box',
         }}
       >
         <Box
@@ -457,7 +460,6 @@ export default function Home() {
             gap: 4,
             mb: 4,
             alignItems: 'center',
-            maxWidth: '900px',
             width: '100%',
           }}
         >

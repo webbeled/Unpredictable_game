@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Container, Box, Typography, Button, Alert, CircularProgress, TextField, Chip, Stack, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material'
 import { useConfig } from '../contexts/ConfigContext'
+import { useLang } from '../contexts/LangContext'
 import { useQuiz, useQuizAnswer, useGuessSubmit } from '../hooks/useQuiz'
 import NavBar from '../components/NavBar'
 
@@ -15,13 +16,58 @@ const MASK_COLORS = {
   '6666': '#FFA07A', // Verbs - light salmon
 }
 
-const MASK_LABELS: Record<string, string> = {
-  '1111': 'Adjectives',
-  '2222': 'Closed Class',
-  '3333': 'Nouns',
-  '4444': 'Numbers',
-  '5555': 'Proper Nouns',
-  '6666': 'Verbs',
+const MASK_LABELS_BY_LANG: Record<string, Record<string, string>> = {
+  en: {
+    '1111': 'Adjectives',
+    '2222': 'Closed Class',
+    '3333': 'Nouns',
+    '4444': 'Numbers',
+    '5555': 'Proper Nouns',
+    '6666': 'Verbs',
+  },
+  fr: {
+    '1111': 'Adjectifs',
+    '2222': 'Mots outils',
+    '3333': 'Noms',
+    '4444': 'Nombres',
+    '5555': 'Noms propres',
+    '6666': 'Verbes',
+  },
+}
+
+const gameTranslations = {
+  en: {
+    loading: 'Loading...',
+    daily: 'THE DAILY',
+    scoreLabel: 'Score',
+    finalLabel: 'Final',
+    giveUp: 'I Give Up',
+    next: 'Next',
+    timesUp: "Time's up! Review the article above and move to the next challenge.",
+    wordTypeQuestion: 'What word type are you guessing?',
+    placeholder: 'Enter your guess...',
+    guessButton: 'Guess',
+    yourAnswers: 'Your Answers',
+    selectPosFirst: 'Select a part of speech first',
+    alreadyGuessed: (word: string, pos: string) => `You already guessed "${word}" for ${pos}`,
+    congrats: 'Congratulations! You guessed all the words!',
+  },
+  fr: {
+    loading: 'Chargement...',
+    daily: 'LE QUOTIDIEN',
+    scoreLabel: 'Score',
+    finalLabel: 'Final',
+    giveUp: "J'abandonne",
+    next: 'Suivant',
+    timesUp: "Temps écoulé ! Relisez l'article ci-dessus et passez au défi suivant.",
+    wordTypeQuestion: 'Quel type de mot devinez-vous ?',
+    placeholder: 'Entrez votre réponse...',
+    guessButton: 'Deviner',
+    yourAnswers: 'Vos réponses',
+    selectPosFirst: "Sélectionnez d'abord une partie du discours",
+    alreadyGuessed: (word: string, pos: string) => `Vous avez déjà deviné « ${word} » pour ${pos}`,
+    congrats: 'Félicitations ! Vous avez deviné tous les mots !',
+  },
 }
 
 // Sleek success chime using Web Audio API — no external files needed
@@ -56,7 +102,10 @@ function playSuccessSound(currentScore: number) {
 
 export default function Game() {
   const { config } = useConfig()
+  const { lang } = useLang()
   const queryClient = useQueryClient()
+  const t = gameTranslations[lang]
+  const MASK_LABELS = MASK_LABELS_BY_LANG[lang]
 
   const [guess, setGuess] = useState('')
   const [guesses, setGuesses] = useState<Map<string, Set<string>>>(new Map())
@@ -72,7 +121,7 @@ export default function Game() {
   const [scoreBumpKey, setScoreBumpKey] = useState(0)
   const [scoreFinalized, setScoreFinalized] = useState(false)
 
-  const { data: randomEntry, isLoading, error, refetch } = useQuiz()
+  const { data: randomEntry, isLoading, error, refetch } = useQuiz(lang)
 
   const presentMasks = useMemo(() => {
     if (!randomEntry?.annotate) return new Set<string>()
@@ -111,9 +160,9 @@ export default function Game() {
   useEffect(() => {
     return () => {
       saveQuizSessionRef.current(Date.now())
-      queryClient.removeQueries({ queryKey: ['quiz'] })
+      queryClient.removeQueries({ queryKey: ['quiz', lang] })
     }
-  }, [queryClient])
+  }, [queryClient, lang])
 
   const finalSessionPayloadRef = useRef<any>(null)
 
@@ -277,7 +326,7 @@ export default function Game() {
   const handleNewGame = () => {
     try {
       saveQuizSessionRef.current(Date.now())
-      queryClient.removeQueries({ queryKey: ['quiz'] })
+      queryClient.removeQueries({ queryKey: ['quiz', lang] })
       refetch()
       setGuesses(new Map())
       setGuess('')
@@ -338,12 +387,12 @@ export default function Game() {
     }
 
     if (!selectedMask) {
-      setGuessError('Select a part of speech first')
+      setGuessError(t.selectPosFirst)
       return
     }
 
     if (guesses.get(selectedMask)?.has(trimmedGuess)) {
-      setGuessError(`You already guessed "${trimmedGuess}" for ${MASK_LABELS[selectedMask]}`)
+      setGuessError(t.alreadyGuessed(trimmedGuess, MASK_LABELS[selectedMask]))
       return
     }
 
@@ -393,7 +442,7 @@ export default function Game() {
           })
 
           setIsRevealed(true)
-          setSuccessMessage(`Congratulations! You guessed all the words!`)
+          setSuccessMessage(t.congrats)
 
           fetchAnswer().then((answerResult) => {
             if (answerResult.data) {
@@ -517,7 +566,7 @@ export default function Game() {
           {isLoading && (
             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
               <CircularProgress size={24} />
-              <Typography>Loading...</Typography>
+              <Typography>{t.loading}</Typography>
             </Box>
           )}
 
@@ -551,7 +600,7 @@ export default function Game() {
                       fontStyle: 'italic',
                     }}
                   >
-                    THE DAILY
+                    {t.daily}
                   </Typography>
                   <Typography
                     sx={{
@@ -610,7 +659,7 @@ export default function Game() {
                           }),
                         }}
                       >
-                        {scoreFinalized ? 'Final' : 'Score'}
+                        {scoreFinalized ? t.finalLabel : t.scoreLabel}
                       </Typography>
                       <Typography
                         key={scoreBumpKey}
@@ -672,7 +721,7 @@ export default function Game() {
                       },
                     }}
                   >
-                    I Give Up
+                    {t.giveUp}
                   </Button>
                 )}
                 {isRevealed && (
@@ -692,7 +741,7 @@ export default function Game() {
                       },
                     }}
                   >
-                    Next
+                    {t.next}
                   </Button>
                 )}
               </Box>
@@ -736,7 +785,7 @@ export default function Game() {
                     border: '1px solid #0d47a1',
                   }}
                 >
-                  Time's up! Review the article above and move to the next challenge.
+                  {t.timesUp}
                 </Alert>
               )}
 
@@ -754,7 +803,7 @@ export default function Game() {
                       textTransform: 'uppercase',
                     }}
                   >
-                    What word type are you guessing?
+                    {t.wordTypeQuestion}
                   </FormLabel>
                   <RadioGroup
                     row
@@ -792,7 +841,7 @@ export default function Game() {
                   <TextField
                     fullWidth
                     variant="outlined"
-                    placeholder="Enter your guess..."
+                    placeholder={t.placeholder}
                     value={guess}
                     onChange={handleGuessChange}
                     error={!!guessError}
@@ -832,7 +881,7 @@ export default function Game() {
                       },
                     }}
                   >
-                    Guess
+                    {t.guessButton}
                   </Button>
                 </Box>
               </Box>
@@ -850,7 +899,7 @@ export default function Game() {
                       mb: 2,
                     }}
                   >
-                    Your Answers ({Array.from(guesses.values()).reduce((n, s) => n + s.size, 0)})
+                    {t.yourAnswers} ({Array.from(guesses.values()).reduce((n, s) => n + s.size, 0)})
                   </Typography>
                   <Stack spacing={1.5}>
                     {Object.keys(MASK_LABELS)

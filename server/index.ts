@@ -26,7 +26,8 @@ app.use('/api/guesses', guessesRouter);
 // API endpoint to get a random quiz
 app.get('/api/quiz/', (req, res) => {
   try {
-    const quiz = getRandomQuiz();
+    const lang = (req.query.lang as string || 'en').toLowerCase() as 'en' | 'fr';
+    const quiz = getRandomQuiz(lang);
     res.json(quiz);
   } catch (error) {
     console.error('Error getting random quiz:', error);
@@ -55,6 +56,8 @@ app.get('/api/quiz/new/', async (req, res) => {
       return;
     }
 
+    const lang = (req.query.lang as string || 'en').toLowerCase() as 'en' | 'fr';
+
     // Get all articles the user has seen
     const result = await pool.query(
       'SELECT article_id FROM seen_articles WHERE user_id = $1',
@@ -63,7 +66,7 @@ app.get('/api/quiz/new/', async (req, res) => {
     const seenIds = new Set(result.rows.map(row => row.article_id));
 
     // Get a random unseen quiz
-    const quiz = getRandomUnseenQuiz(seenIds);
+    const quiz = getRandomUnseenQuiz(seenIds, lang);
     
     if (!quiz) {
       res.status(500).json({ error: 'No quizzes available' });

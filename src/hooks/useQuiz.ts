@@ -25,11 +25,11 @@ export interface GuessResponse {
   word?: string
 }
 
-export const useQuiz = () => {
+export const useQuiz = (lang: 'en' | 'fr' = 'en') => {
   return useQuery<QuizEntry>({
-    queryKey: ['quiz'],
+    queryKey: ['quiz', lang],
     queryFn: async () => {
-      const response = await fetch('/api/quiz/')
+      const response = await fetch(`/api/quiz/?lang=${lang}`)
       if (!response.ok) throw new Error('Failed to fetch quiz')
       return response.json()
     },
