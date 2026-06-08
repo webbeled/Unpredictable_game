@@ -29,7 +29,7 @@ export const useQuiz = (lang: 'en' | 'fr' = 'en') => {
   return useQuery<QuizEntry>({
     queryKey: ['quiz', lang],
     queryFn: async () => {
-      const response = await fetch(`/api/quiz/?lang=${lang}`)
+      const response = await fetch(`/api/quiz/new/?lang=${lang}`, { credentials: 'include' })
       if (!response.ok) throw new Error('Failed to fetch quiz')
       return response.json()
     },

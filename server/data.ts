@@ -2,7 +2,6 @@ import { loadAllOdsFiles, SheetData } from './odsLoader';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import * as crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -38,6 +37,9 @@ interface FullEntry {
 let cachedOdsData: Record<string, SheetData> | null = null;
 let allEntries: FullEntry[] = [];
 let entryMap: Map<string, FullEntry> = new Map();
+
+// Per-user seen-article tracking keyed by userId + lang
+const seenByUser: Map<string, Set<string>> = new Map();
 
 /**
  * Format an ID from CSV (ensures it's a string)
@@ -195,10 +197,11 @@ export function checkGuess(id: string, guess: string): { mask: string; word: str
 }
 
 /**
- * Get a random unseen quiz for a user
+ * Get a random unseen quiz for a user, tracking seen articles in memory.
+ * Cycles through all articles before repeating.
  */
-export function getRandomUnseenQuiz(seenIds: Set<string>, lang: 'en' | 'fr' = 'en'): QuizEntry | null {
-  loadData(); // Ensure data is loaded
+export function getRandomUnseenQuiz(userId: string, lang: 'en' | 'fr' = 'en'): QuizEntry {
+  loadData();
 
   if (allEntries.length === 0) {
     throw new Error('No quiz entries found');
@@ -209,16 +212,27 @@ export function getRandomUnseenQuiz(seenIds: Set<string>, lang: 'en' | 'fr' = 'e
     throw new Error(`No quiz entries found for language: ${lang}`);
   }
 
-  // Get all entries that haven't been seen
-  const unseenEntries = filteredEntries.filter(entry => {
-    const id = generateId(entry.fileName, entry.sheetName, entry.rowIndex);
-    return !seenIds.has(id);
+  const key = `${userId}:${lang}`;
+  let seen = seenByUser.get(key);
+  if (!seen) {
+    seen = new Set<string>();
+    seenByUser.set(key, seen);
+  }
+
+  let available = filteredEntries.filter(entry => {
+    const id = entry.rowData.ID ? formatId(entry.rowData.ID) : String(entry.rowIndex);
+    return !seen!.has(id);
   });
 
-  // If all have been seen, reset and pick any random one from filtered entries
-  const availableEntries = unseenEntries.length > 0 ? unseenEntries : filteredEntries;
-  const randomEntry = availableEntries[Math.floor(Math.random() * availableEntries.length)];
-  const id = generateId(randomEntry.fileName, randomEntry.sheetName, randomEntry.rowIndex);
+  // All seen — reset and start the cycle again
+  if (available.length === 0) {
+    seen.clear();
+    available = filteredEntries;
+  }
+
+  const randomEntry = available[Math.floor(Math.random() * available.length)];
+  const id = randomEntry.rowData.ID ? formatId(randomEntry.rowData.ID) : String(randomEntry.rowIndex);
+  seen.add(id);
 
   return {
     id,

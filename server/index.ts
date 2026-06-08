@@ -4,7 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import { getRandomQuiz, getQuizAnswer, checkGuess, getRandomUnseenQuiz } from './data.js';
-import { pool } from './db/index.js';
+
 import authRouter from './auth.js';
 import quizSessionsRouter from './quizSessions.js';
 import guessesRouter from './guesses.js';
@@ -39,7 +39,7 @@ app.get('/api/quiz/', (req, res) => {
 });
 
 // API endpoint to get a random unseen quiz (respects user's seen articles)
-app.get('/api/quiz/new/', async (req, res) => {
+app.get('/api/quiz/new/', (req, res) => {
   try {
     const token = req.cookies?.token;
     if (!token) {
@@ -58,27 +58,7 @@ app.get('/api/quiz/new/', async (req, res) => {
 
     const lang = (req.query.lang as string || 'en').toLowerCase() as 'en' | 'fr';
 
-    // Get all articles the user has seen
-    const result = await pool.query(
-      'SELECT article_id FROM seen_articles WHERE user_id = $1',
-      [userId]
-    );
-    const seenIds = new Set(result.rows.map(row => row.article_id));
-
-    // Get a random unseen quiz
-    const quiz = getRandomUnseenQuiz(seenIds, lang);
-    
-    if (!quiz) {
-      res.status(500).json({ error: 'No quizzes available' });
-      return;
-    }
-    
-    // Mark this article as seen
-    await pool.query(
-      'INSERT INTO seen_articles (user_id, article_id, viewed_at) VALUES ($1, $2, $3) ON CONFLICT (user_id, article_id) DO UPDATE SET viewed_at = $3',
-      [userId, quiz.id, Date.now()]
-    );
-
+    const quiz = getRandomUnseenQuiz(String(userId), lang);
     res.json(quiz);
   } catch (error) {
     console.error('Error getting unseen quiz:', error);
