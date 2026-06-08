@@ -27,9 +27,11 @@ async function exportUsers() {
         gender,
         location as nationality,
         english_speaker as first_language_is_english,
+        age,
+        consent,
         created_at
       FROM users
-      ORDER BY created_at DESC
+      ORDER BY created_at ASC
     `);
 
     const rows = result.rows;
@@ -65,21 +67,31 @@ async function exportUsers() {
 async function exportScores() {
   try {
     const result = await client.query(`
-      SELECT 
+      SELECT
         qs.id as session_id,
-        u.email,
+        u.user_uuid as user_id,
         u.participant_code,
-        qs.quiz_id,
-        qs.score,
-        qs.created_at,
-        qs.ended_at,
+        u.location as nationality,
+        u.english_speaker as first_language_is_english,
+        qs.quiz_id as paragraph_id,
+        qs.score as final_score,
+        to_timestamp(qs.created_at::double precision / 1000) AT TIME ZONE 'UTC' as session_start,
+        to_timestamp(qs.ended_at::double precision / 1000) AT TIME ZONE 'UTC' as session_end,
+        qs.adj_correct,
+        qs.func_correct,
+        qs.noun_correct,
+        qs.num_correct,
+        qs.propn_correct,
+        qs.verb_correct,
         COUNT(g.id) as total_guesses,
         COUNT(g.id) FILTER (WHERE g.correct = true) as correct_guesses
       FROM quiz_sessions qs
       LEFT JOIN users u ON qs.user_id = u.user_uuid
       LEFT JOIN guesses g ON qs.id = g.session_id
-      GROUP BY qs.id, u.email, u.participant_code, qs.quiz_id, qs.score, qs.created_at, qs.ended_at
-      ORDER BY qs.created_at DESC
+      GROUP BY qs.id, u.user_uuid, u.participant_code, u.location, u.english_speaker,
+               qs.quiz_id, qs.score, qs.created_at, qs.ended_at,
+               qs.adj_correct, qs.func_correct, qs.noun_correct, qs.num_correct, qs.propn_correct, qs.verb_correct
+      ORDER BY qs.created_at ASC
     `);
 
     const rows = result.rows;
@@ -122,11 +134,10 @@ async function exportGuesses() {
         u.english_speaker as first_language_is_english,
         g.session_id,
         g.quiz_id as paragraph_id,
-        qs.created_at as session_start,
-        qs.ended_at as session_end,
+        to_timestamp(qs.created_at::double precision / 1000) AT TIME ZONE 'UTC' as session_start,
         qs.score as final_score,
         g.guess_order,
-        g.ts as guess_time,
+        to_timestamp(g.ts::double precision / 1000) AT TIME ZONE 'UTC' as guess_time,
         g.guessed_word,
         g.part_of_speech,
         g.correct,
@@ -135,7 +146,7 @@ async function exportGuesses() {
       FROM guesses g
       LEFT JOIN quiz_sessions qs ON g.session_id = qs.id
       LEFT JOIN users u ON qs.user_id = u.user_uuid
-      ORDER BY g.ts DESC
+      ORDER BY g.session_id, g.guess_order
     `);
 
     const rows = result.rows;
