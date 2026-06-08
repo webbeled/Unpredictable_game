@@ -126,16 +126,16 @@ async function exportGuesses() {
   try {
     const result = await client.query(`
       SELECT
-        u.user_uuid as user_id,
+        u.id as user_id,
         u.participant_code,
-        u.location as nationality,
-        u.english_speaker as first_language_is_english,
         g.session_id,
         g.quiz_id as paragraph_id,
-        to_timestamp(qs.created_at::double precision / 1000) AT TIME ZONE 'UTC' as session_start,
-        qs.score as final_score,
+        u.english_speaker,
+        qs.created_at as session_start_ms,
+        qs.ended_at as session_end_ms,
+        qs.score as final_session_score,
         g.guess_order,
-        to_timestamp(g.ts::double precision / 1000) AT TIME ZONE 'UTC' as guess_time,
+        g.ts as guess_time_ms,
         g.guessed_word,
         g.part_of_speech,
         g.correct,
@@ -153,19 +153,50 @@ async function exportGuesses() {
       return;
     }
 
-    const headers = Object.keys(rows[0]);
+    const headers = [
+      'user_id', 'participant_code', 'session_id', 'paragraph_id', 'language',
+      'session_start_ms', 'session_start_readable',
+      'session_end_ms', 'session_end_readable',
+      'final_session_score', 'guess_order', 'guess_time_ms', 'guess_time_readable',
+      'guessed_word', 'part_of_speech', 'correct', 'score_before_guess', 'score_after_guess'
+    ];
+
+    function toReadable(ms) {
+      if (!ms) return '';
+      return new Date(Number(ms)).toUTCString();
+    }
+
+    function getLanguage(englishSpeaker) {
+      if (englishSpeaker === true) return 'english';
+      if (englishSpeaker === false) return 'french';
+      return 'unknown';
+    }
+
     const csvContent = [
       headers.join(','),
-      ...rows.map(row =>
-        headers.map(header => {
-          const value = row[header];
-          if (value === null || value === undefined) return '';
-          if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
-            return `"${value.replace(/"/g, '""')}"`;
-          }
-          return value;
-        }).join(',')
-      )
+      ...rows.map(row => [
+        row.user_id || '',
+        row.participant_code || '',
+        row.session_id || '',
+        row.paragraph_id || '',
+        getLanguage(row.english_speaker),
+        row.session_start_ms || '',
+        toReadable(row.session_start_ms),
+        row.session_end_ms || '',
+        toReadable(row.session_end_ms),
+        row.final_session_score ?? '',
+        row.guess_order ?? '',
+        row.guess_time_ms || '',
+        toReadable(row.guess_time_ms),
+        row.guessed_word || '',
+        row.part_of_speech || '',
+        row.correct ? '1' : '0',
+        row.score_before_guess ?? '',
+        row.score_after_guess ?? ''
+      ].map(val => {
+        const str = String(val);
+        return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
+      }).join(','))
     ].join('\n');
 
     const filename = path.join(__dirname, `guesses_export_${timestamp}.csv`);
