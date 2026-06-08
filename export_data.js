@@ -27,8 +27,6 @@ async function exportUsers() {
         gender,
         location as nationality,
         english_speaker as first_language_is_english,
-        age,
-        consent,
         created_at
       FROM users
       ORDER BY created_at ASC
