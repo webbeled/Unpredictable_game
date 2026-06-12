@@ -546,25 +546,25 @@ export default function Home() {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            gap: { xs: 2, md: 4 },
+            gap: { xs: 1.5, md: 2.5 },
             opacity: 0.55,
             transition: 'opacity 0.3s ease',
             '&:hover': { opacity: 0.75 },
           }}
         >
-          <img src={anrLogo} alt="ANR" style={{ height: 'clamp(32px, 5vw, 56px)', width: 'auto' }} />
-          <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
+          <img src={anrLogo} alt="ANR" style={{ height: 'clamp(24px, 3.5vw, 40px)', width: 'auto' }} />
+          <Box sx={{ width: 1, height: 16, borderLeft: '1px solid #999', opacity: 0.3 }} />
           <img
             src={culturelabLogo}
             alt="CultureLab"
-            style={{ height: 'clamp(32px, 5vw, 56px)', width: 'auto', filter: 'drop-shadow(0px 0px 0.8px #000)' }}
+            style={{ height: 'clamp(24px, 3.5vw, 40px)', width: 'auto', filter: 'drop-shadow(0px 0px 0.8px #000)' }}
           />
-          <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
+          <Box sx={{ width: 1, height: 16, borderLeft: '1px solid #999', opacity: 0.3 }} />
           <Typography
             component="button"
             onClick={() => setContactDialogOpen(true)}
             sx={{
-              fontSize: { xs: '0.75rem', md: '0.875rem' },
+              fontSize: { xs: '0.7rem', md: '0.8rem' },
               color: '#666',
               textDecoration: 'underline',
               cursor: 'pointer',
@@ -578,12 +578,12 @@ export default function Home() {
           >
             {t.contactUs}
           </Typography>
-          <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
+          <Box sx={{ width: 1, height: 16, borderLeft: '1px solid #999', opacity: 0.3 }} />
           <Typography
             component="button"
             onClick={() => { setFeedbackDialogOpen(true); setFeedbackSubmitted(false); setFeedbackText('') }}
             sx={{
-              fontSize: { xs: '0.75rem', md: '0.875rem' },
+              fontSize: { xs: '0.7rem', md: '0.8rem' },
               color: '#666',
               textDecoration: 'underline',
               cursor: 'pointer',
