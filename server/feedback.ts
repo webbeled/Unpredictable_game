@@ -18,10 +18,15 @@ router.post('/', async (req: Request, res: Response) => {
   const token = req.cookies?.token
   if (token) {
     try {
-      const payload = jwt.verify(token, JWT_SECRET) as { userId: number; email: string }
-      userId = payload.userId
-      const result = await pool.query('SELECT participant_code FROM users WHERE id = $1', [userId])
-      participantCode = result.rows[0]?.participant_code ?? null
+      const payload = jwt.verify(token, JWT_SECRET) as { userId: any; email: string }
+      const result = await pool.query(
+        'SELECT id, participant_code FROM users WHERE id = $1 OR user_uuid = $2',
+        [Number.isInteger(Number(payload.userId)) ? Number(payload.userId) : null, payload.userId]
+      )
+      if (result.rows[0]) {
+        userId = result.rows[0].id
+        participantCode = result.rows[0].participant_code ?? null
+      }
     } catch {
       // proceed anonymously
     }
