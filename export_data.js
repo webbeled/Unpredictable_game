@@ -207,6 +207,41 @@ async function exportGuesses() {
   }
 }
 
+async function exportFeedback() {
+  try {
+    const result = await client.query(`
+      SELECT participant_code, feedback_text, created_at
+      FROM feedback
+      ORDER BY created_at ASC
+    `);
+
+    const rows = result.rows;
+    if (rows.length === 0) {
+      console.log('No feedback found');
+      return;
+    }
+
+    const headers = Object.keys(rows[0]);
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row =>
+        headers.map(header => {
+          const value = row[header];
+          if (value === null || value === undefined) return '';
+          const str = String(value);
+          return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
+        }).join(',')
+      )
+    ].join('\n');
+
+    const filename = path.join(__dirname, `feedback_export_${timestamp}.csv`);
+    fs.writeFileSync(filename, csvContent, 'utf8');
+    console.log(`✓ Feedback exported to ${filename} (${rows.length} rows)`);
+  } catch (err) {
+    console.error('Error exporting feedback:', err.message);
+  }
+}
+
 async function main() {
   try {
     await client.connect();
@@ -215,6 +250,7 @@ async function main() {
     await exportUsers();
     await exportScores();
     await exportGuesses();
+    await exportFeedback();
 
     console.log('\n✓ Export complete!');
     await client.end();

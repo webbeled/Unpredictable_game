@@ -26,6 +26,11 @@ const homeTranslations = {
     contactTitle: 'Contact Us',
     contactBody: 'To reach the team about anything, including questions regarding how your data is handled, or whether you would like to withdraw your consent to participate in our research, please contact:',
     close: 'Close',
+    giveFeedback: 'Give Feedback',
+    feedbackTitle: 'Give Feedback',
+    feedbackPlaceholder: 'Share your thoughts, suggestions, or anything else...',
+    feedbackSubmit: 'Submit',
+    feedbackThanks: 'Thank you for your feedback!',
     noGames: 'No games yet — play your first quiz to see your stats!',
     games: 'Games',
     best: 'Best',
@@ -41,6 +46,11 @@ const homeTranslations = {
     contactTitle: 'Nous contacter',
     contactBody: "Pour contacter l'équipe pour toute question, notamment concernant la gestion de vos données ou si vous souhaitez retirer votre consentement à participer à notre recherche, veuillez contacter :",
     close: 'Fermer',
+    giveFeedback: 'Donner un avis',
+    feedbackTitle: 'Donner un avis',
+    feedbackPlaceholder: 'Partagez vos impressions, suggestions ou autre chose...',
+    feedbackSubmit: 'Envoyer',
+    feedbackThanks: 'Merci pour votre retour !',
     noGames: "Pas encore de parties — jouez votre premier quiz pour voir vos statistiques !",
     games: 'Parties',
     best: 'Meilleur',
@@ -434,6 +444,9 @@ export default function Home() {
   const { lang } = useLang()
   const t = homeTranslations[lang]
   const [contactDialogOpen, setContactDialogOpen] = useState(false)
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false)
+  const [feedbackText, setFeedbackText] = useState('')
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
 
   return (
     <>
@@ -565,7 +578,66 @@ export default function Home() {
           >
             {t.contactUs}
           </Typography>
+          <Box sx={{ width: 1, height: 20, borderLeft: '1px solid #999', opacity: 0.3 }} />
+          <Typography
+            component="button"
+            onClick={() => { setFeedbackDialogOpen(true); setFeedbackSubmitted(false); setFeedbackText('') }}
+            sx={{
+              fontSize: { xs: '0.75rem', md: '0.875rem' },
+              color: '#666',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              border: 'none',
+              background: 'none',
+              padding: 0,
+              fontFamily: 'inherit',
+              whiteSpace: 'nowrap',
+              '&:hover': { color: '#333' },
+            }}
+          >
+            {t.giveFeedback}
+          </Typography>
         </Box>
+
+        {/* Feedback Dialog */}
+        <Dialog open={feedbackDialogOpen} onClose={() => setFeedbackDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontSize: '1.25rem', fontWeight: 600 }}>{t.feedbackTitle}</DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+            {feedbackSubmitted ? (
+              <Typography sx={{ fontSize: '0.95rem', color: '#555' }}>{t.feedbackThanks}</Typography>
+            ) : (
+              <textarea
+                value={feedbackText}
+                onChange={e => setFeedbackText(e.target.value)}
+                placeholder={t.feedbackPlaceholder}
+                rows={5}
+                style={{ width: '100%', padding: '10px', fontSize: '0.95rem', fontFamily: 'inherit', borderRadius: '4px', border: '1px solid #ccc', resize: 'vertical', boxSizing: 'border-box' }}
+              />
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setFeedbackDialogOpen(false)} sx={{ color: '#666' }}>{t.close}</Button>
+            {!feedbackSubmitted && (
+              <Button
+                onClick={async () => {
+                  if (!feedbackText.trim()) return
+                  await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ feedback_text: feedbackText }),
+                  })
+                  setFeedbackSubmitted(true)
+                }}
+                variant="contained"
+                sx={{ bgcolor: '#333' }}
+                disabled={!feedbackText.trim()}
+              >
+                {t.feedbackSubmit}
+              </Button>
+            )}
+          </DialogActions>
+        </Dialog>
 
         {/* Contact Dialog */}
         <Dialog open={contactDialogOpen} onClose={() => setContactDialogOpen(false)} maxWidth="sm" fullWidth>
