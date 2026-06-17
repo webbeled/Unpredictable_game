@@ -27,6 +27,7 @@ async function exportUsers() {
         gender,
         location as nationality,
         english_speaker as first_language_is_english,
+        prolific_id,
         created_at
       FROM users
       ORDER BY created_at ASC

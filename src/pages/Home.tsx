@@ -35,7 +35,7 @@ const homeTranslations = {
     games: 'Games',
     best: 'Best',
     average: 'Average',
-    latest: 'Latest',
+    totalScore: 'Total Score',
     progression: 'Your Progression',
     attentionHeader: 'Attention Clever Readers',
   },
@@ -55,7 +55,7 @@ const homeTranslations = {
     games: 'Parties',
     best: 'Meilleur',
     average: 'Moyenne',
-    latest: 'Dernier',
+    totalScore: 'Score total',
     progression: 'Votre progression',
     attentionHeader: 'Attention Lecteurs Perspicaces',
   },
@@ -320,7 +320,7 @@ function StatsSection() {
           { value: total, label: t.games, dark: false },
           { value: best, label: t.best, dark: false },
           { value: average, label: t.average, dark: false },
-          { value: sessions[sessions.length - 1].score, label: t.latest, dark: true },
+          { value: sessions.reduce((sum, s) => sum + s.score, 0), label: t.totalScore, dark: true },
         ].map(({ value, label, dark }) => (
           <Card
             key={label}
