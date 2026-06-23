@@ -704,6 +704,7 @@ export default function Game() {
 
               {/* Timer and controls */}
               <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                {/* Give Up button — temporarily hidden; uncomment to restore
                 {!isRevealed && (
                   <Button
                     variant="outlined"
@@ -724,6 +725,7 @@ export default function Game() {
                     {t.giveUp}
                   </Button>
                 )}
+                */}
                 {isRevealed && (
                   <Button
                     variant="outlined"
