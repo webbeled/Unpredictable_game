@@ -197,6 +197,59 @@ export function checkGuess(id: string, guess: string): { mask: string; word: str
 }
 
 /**
+ * Compute the current "day epoch" adjusted for 2AM GMT daily reset.
+ * Returns the same number for everyone between 2AM GMT today and 2AM GMT tomorrow.
+ */
+export function getDayEpoch(): number {
+  const now = new Date();
+  const reset = new Date(now);
+  reset.setUTCHours(2, 0, 0, 0);
+  // If we haven't reached 2AM UTC yet, use yesterday's reset
+  if (now.getTime() < reset.getTime()) {
+    reset.setUTCDate(reset.getUTCDate() - 1);
+  }
+  return Math.floor(reset.getTime() / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * Return when the next daily reset is (2AM GMT).
+ */
+export function getNextDailyReset(): Date {
+  const now = new Date();
+  const next = new Date(now);
+  next.setUTCHours(2, 0, 0, 0);
+  next.setUTCSeconds(0, 0);
+  if (now.getTime() >= next.getTime()) {
+    next.setUTCDate(next.getUTCDate() + 1);
+  }
+  return next;
+}
+
+/**
+ * Return today's daily article — deterministic, same for every user.
+ */
+export function getDailyQuiz(lang: 'en' | 'fr' = 'en'): QuizEntry {
+  loadData();
+
+  const filteredEntries = filterEntriesByLanguage(allEntries, lang);
+  if (filteredEntries.length === 0) {
+    throw new Error(`No quiz entries found for language: ${lang}`);
+  }
+
+  const index = getDayEpoch() % filteredEntries.length;
+  const entry = filteredEntries[index];
+  const id = entry.rowData.ID ? formatId(entry.rowData.ID) : String(entry.rowIndex);
+
+  return {
+    id,
+    fileName: entry.fileName,
+    sheetName: entry.sheetName,
+    annotate: entry.annotate,
+    to_annotate: entry.rowData.to_annotate,
+  };
+}
+
+/**
  * Get a random unseen quiz for a user, tracking seen articles in memory.
  * Cycles through all articles before repeating.
  */

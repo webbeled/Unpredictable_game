@@ -117,16 +117,16 @@ router.get('/me', (req: Request, res: Response) => {
   try {
     const payload = jwt.verify(token, JWT_SECRET) as { userId: string; email: string }
     // Look up user demographics for this user
-    pool.query('SELECT participant_code, nationality, gender, first_language_is_english FROM users WHERE user_uuid = $1', [payload.userId])
+    pool.query('SELECT participant_code, location, gender, english_speaker FROM users WHERE user_uuid = $1', [payload.userId])
       .then((r) => {
         const user = r.rows[0]
-        res.json({ 
-          id: payload.userId, 
-          email: payload.email, 
+        res.json({
+          id: payload.userId,
+          email: payload.email,
           participant_code: user?.participant_code ?? null,
-          nationality: user?.nationality ?? null,
+          nationality: user?.location ?? null,
           gender: user?.gender ?? null,
-          first_language_is_english: user?.first_language_is_english ?? null,
+          first_language_is_english: user?.english_speaker ?? null,
         })
       })
       .catch((err) => {

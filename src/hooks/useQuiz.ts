@@ -5,6 +5,9 @@ export interface QuizEntry {
   fileName: string
   sheetName: string
   annotate: string
+  alreadyPlayed?: boolean
+  previousScore?: number
+  nextReset?: string
 }
 
 export interface QuizAnswer {
@@ -25,11 +28,12 @@ export interface GuessResponse {
   word?: string
 }
 
-export const useQuiz = (lang: 'en' | 'fr' = 'en') => {
+export const useQuiz = (lang: 'en' | 'fr' = 'en', daily = false) => {
   return useQuery<QuizEntry>({
-    queryKey: ['quiz', lang],
+    queryKey: ['quiz', lang, daily ? 'daily' : 'random'],
     queryFn: async () => {
-      const response = await fetch(`/api/quiz/new/?lang=${lang}`, { credentials: 'include' })
+      const url = daily ? `/api/quiz/daily?lang=${lang}` : `/api/quiz/new/?lang=${lang}`
+      const response = await fetch(url, { credentials: 'include' })
       if (!response.ok) throw new Error('Failed to fetch quiz')
       return response.json()
     },
