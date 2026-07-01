@@ -4,7 +4,6 @@ import { useLocation } from 'react-router-dom'
 import { Container, Box, Typography, Button, Alert, CircularProgress, TextField, Chip, Stack, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material'
 import { useConfig } from '../contexts/ConfigContext'
 import { useLang } from '../contexts/LangContext'
-import { useAuth } from '../contexts/AuthContext'
 import { useQuiz, useQuizAnswer, useGuessSubmit } from '../hooks/useQuiz'
 import NavBar from '../components/NavBar'
 
@@ -106,7 +105,6 @@ function playSuccessSound(currentScore: number) {
 export default function Game() {
   const { config } = useConfig()
   const { lang } = useLang()
-  const { user } = useAuth()
   const queryClient = useQueryClient()
   const location = useLocation()
   const isDaily = !!(location.state as any)?.daily
@@ -176,6 +174,15 @@ export default function Game() {
       sessionSaved.current = false
       finalSessionPayloadRef.current = null
       guessCounter.current = 0
+      // Mark daily as started immediately (score 0) so navigating away still counts as played
+      if (isDaily) {
+        fetch('/api/quiz/daily/played', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ score: 0 }),
+        }).catch(() => {})
+      }
     }
   }, [randomEntry?.id])
 

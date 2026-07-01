@@ -5,28 +5,38 @@ import { pool } from './db/index.js'
 const router = Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
 
-function getUserId(req: Request): string | null {
+async function getUserIntId(req: Request): Promise<number | null> {
   try {
     const token = req.cookies?.token
     if (!token) return null
-    const payload = jwt.verify(token, JWT_SECRET) as { userId: string }
-    return payload.userId
+    const payload = jwt.verify(token, JWT_SECRET) as { userId?: string; intId?: number; email?: string }
+    // New JWTs have intId directly — no DB lookup needed
+    if (payload.intId) return payload.intId
+    // Old JWTs: fall back to email lookup
+    if (payload.email) {
+      const result = await pool.query('SELECT id FROM users WHERE email = $1', [payload.email])
+      return result.rows[0]?.id ?? null
+    }
+    return null
   } catch { return null }
 }
 
 // Send a friend request by participant_code
 router.post('/request', async (req: Request, res: Response) => {
-  const userId = getUserId(req)
+  const userId = await getUserIntId(req)
   if (!userId) { res.status(401).json({ error: 'Not authenticated' }); return }
 
   const { participant_code } = req.body
   if (!participant_code) { res.status(400).json({ error: 'participant_code required' }); return }
 
   try {
-    const receiver = await pool.query('SELECT user_uuid FROM users WHERE participant_code = $1', [participant_code.toUpperCase()])
+    const receiver = await pool.query(
+      'SELECT id FROM users WHERE participant_code = $1',
+      [participant_code.toUpperCase()]
+    )
     if (receiver.rows.length === 0) { res.status(404).json({ error: 'User not found' }); return }
 
-    const receiverId = receiver.rows[0].user_uuid
+    const receiverId: number = receiver.rows[0].id
     if (receiverId === userId) { res.status(400).json({ error: 'Cannot add yourself' }); return }
 
     const existing = await pool.query(
@@ -56,16 +66,16 @@ router.post('/request', async (req: Request, res: Response) => {
   }
 })
 
-// Get pending incoming friend requests
+// Get pending incoming friend requests (notification bell)
 router.get('/requests', async (req: Request, res: Response) => {
-  const userId = getUserId(req)
+  const userId = await getUserIntId(req)
   if (!userId) { res.status(401).json({ error: 'Not authenticated' }); return }
 
   try {
     const result = await pool.query(`
       SELECT fr.id, u.participant_code as sender_code, fr.created_at
       FROM friend_requests fr
-      JOIN users u ON fr.sender_id = u.user_uuid
+      JOIN users u ON fr.sender_id = u.id
       WHERE fr.receiver_id = $1 AND fr.status = 'pending'
       ORDER BY fr.created_at DESC
     `, [userId])
@@ -78,7 +88,7 @@ router.get('/requests', async (req: Request, res: Response) => {
 
 // Accept a request
 router.post('/accept/:id', async (req: Request, res: Response) => {
-  const userId = getUserId(req)
+  const userId = await getUserIntId(req)
   if (!userId) { res.status(401).json({ error: 'Not authenticated' }); return }
 
   try {
@@ -95,7 +105,7 @@ router.post('/accept/:id', async (req: Request, res: Response) => {
 
 // Decline a request
 router.post('/decline/:id', async (req: Request, res: Response) => {
-  const userId = getUserId(req)
+  const userId = await getUserIntId(req)
   if (!userId) { res.status(401).json({ error: 'Not authenticated' }); return }
 
   try {
@@ -112,7 +122,7 @@ router.post('/decline/:id', async (req: Request, res: Response) => {
 
 // Get friends list with total scores
 router.get('/', async (req: Request, res: Response) => {
-  const userId = getUserId(req)
+  const userId = await getUserIntId(req)
   if (!userId) { res.status(401).json({ error: 'Not authenticated' }); return }
 
   try {
@@ -123,7 +133,7 @@ router.get('/', async (req: Request, res: Response) => {
         UNION
         SELECT sender_id as friend_id FROM friend_requests WHERE receiver_id = $1 AND status = 'accepted'
       ) friends
-      JOIN users u ON u.user_uuid = friends.friend_id
+      JOIN users u ON u.id = friends.friend_id
       LEFT JOIN quiz_sessions qs ON qs.user_id = u.user_uuid
       GROUP BY u.participant_code
       ORDER BY total_score DESC
@@ -137,22 +147,26 @@ router.get('/', async (req: Request, res: Response) => {
 
 // Get a friend's quiz sessions (only if mutual friends)
 router.get('/:participant_code/stats', async (req: Request, res: Response) => {
-  const userId = getUserId(req)
+  const userId = await getUserIntId(req)
   if (!userId) { res.status(401).json({ error: 'Not authenticated' }); return }
 
   const { participant_code } = req.params
 
   try {
-    const friendResult = await pool.query('SELECT user_uuid FROM users WHERE participant_code = $1', [participant_code])
+    const friendResult = await pool.query(
+      'SELECT id, user_uuid FROM users WHERE participant_code = $1',
+      [participant_code]
+    )
     if (friendResult.rows.length === 0) { res.status(404).json({ error: 'User not found' }); return }
 
-    const friendId = friendResult.rows[0].user_uuid
+    const friendIntId: number = friendResult.rows[0].id
+    const friendUuid: string = friendResult.rows[0].user_uuid
 
     const friendCheck = await pool.query(`
       SELECT id FROM friend_requests WHERE
       ((sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1))
       AND status = 'accepted'
-    `, [userId, friendId])
+    `, [userId, friendIntId])
     if (friendCheck.rows.length === 0) { res.status(403).json({ error: 'Not friends' }); return }
 
     const result = await pool.query(`
@@ -167,7 +181,7 @@ router.get('/:participant_code/stats', async (req: Request, res: Response) => {
       WHERE qs.user_id = $1
       GROUP BY qs.id, qs.quiz_id, qs.score, qs.created_at, qs.ended_at
       ORDER BY qs.created_at ASC
-    `, [friendId])
+    `, [friendUuid])
 
     res.json(result.rows)
   } catch (err) {

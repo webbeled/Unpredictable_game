@@ -603,7 +603,30 @@ function FriendsSection() {
       if (!res.ok) return []
       return res.json()
     },
+    refetchOnWindowFocus: true,
   })
+
+  const { data: pendingRequests = [] } = useQuery<{ id: number; sender_code: string; created_at: number }[]>({
+    queryKey: ['friend-requests'],
+    queryFn: async () => {
+      const res = await fetch('/api/friends/requests', { credentials: 'include' })
+      if (!res.ok) return []
+      return res.json()
+    },
+    refetchOnWindowFocus: true,
+    refetchInterval: 15000,
+  })
+
+  const handleAccept = async (id: number) => {
+    await fetch(`/api/friends/accept/${id}`, { method: 'POST', credentials: 'include' })
+    queryClient.invalidateQueries({ queryKey: ['friend-requests'] })
+    queryClient.invalidateQueries({ queryKey: ['friends'] })
+  }
+
+  const handleDecline = async (id: number) => {
+    await fetch(`/api/friends/decline/${id}`, { method: 'POST', credentials: 'include' })
+    queryClient.invalidateQueries({ queryKey: ['friend-requests'] })
+  }
 
   const sendRequest = async () => {
     if (!code.trim()) return
@@ -680,6 +703,38 @@ function FriendsSection() {
         <Typography sx={{ fontSize: '0.78rem', color: '#666', mb: 2, fontStyle: 'italic', fontFamily: 'Georgia, serif' }}>
           {status}
         </Typography>
+      )}
+
+      {/* Pending incoming requests */}
+      {pendingRequests.length > 0 && (
+        <Paper elevation={0} sx={{ borderRadius: 0, border: '2px solid #000', overflow: 'hidden', mb: 3 }}>
+          <Box sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid #eee', background: '#fafafa' }}>
+            <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '11px', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700, color: '#333' }}>
+              {lang === 'en' ? 'Friend Requests' : "Demandes d'amis"}
+            </Typography>
+          </Box>
+          {pendingRequests.map((req, i) => (
+            <Box key={req.id} sx={{ px: 2.5, py: 1.5, borderBottom: i < pendingRequests.length - 1 ? '1px solid #f0f0f0' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography sx={{ fontFamily: 'Georgia, serif', fontSize: '13px', letterSpacing: '1px', color: '#222' }}>
+                {req.sender_code}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <button
+                  onClick={() => handleAccept(req.id)}
+                  style={{ padding: '4px 14px', background: '#000', color: '#fff', border: '2px solid #000', cursor: 'pointer', fontFamily: 'Cormorant Garamond, serif', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}
+                >
+                  {lang === 'en' ? 'Accept' : 'Accepter'}
+                </button>
+                <button
+                  onClick={() => handleDecline(req.id)}
+                  style={{ padding: '4px 14px', background: '#fff', color: '#000', border: '2px solid #000', cursor: 'pointer', fontFamily: 'Cormorant Garamond, serif', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}
+                >
+                  {lang === 'en' ? 'Decline' : 'Refuser'}
+                </button>
+              </Box>
+            </Box>
+          ))}
+        </Paper>
       )}
 
       {/* Friends leaderboard */}

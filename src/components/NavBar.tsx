@@ -35,7 +35,8 @@ export default function NavBar({ score }: NavBarProps) {
       return res.json()
     },
     enabled: !!user && !isGamePage,
-    refetchInterval: 30000,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   })
 
   const handleAccept = async (id: number) => {
