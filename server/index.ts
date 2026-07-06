@@ -10,7 +10,7 @@ import authRouter from './auth.js';
 import quizSessionsRouter from './quizSessions.js';
 import guessesRouter from './guesses.js';
 import feedbackRouter from './feedback.js'
-import friendsRouter from './friends.js';
+
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,7 +26,6 @@ app.use('/api/auth', authRouter);
 app.use('/api/quiz-sessions', quizSessionsRouter);
 app.use('/api/guesses', guessesRouter);
 app.use('/api/feedback', feedbackRouter);
-app.use('/api/friends', friendsRouter);
 
 // API endpoint to get a random quiz
 app.get('/api/quiz/', (req, res) => {

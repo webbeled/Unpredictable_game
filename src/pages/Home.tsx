@@ -1,4 +1,4 @@
-import { Box, Button, Typography, Paper, Card, Skeleton, Container, Dialog, DialogTitle, DialogContent, DialogActions, Tabs, Tab } from '@mui/material'
+import { Box, Button, Typography, Paper, Card, Skeleton, Container, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -6,7 +6,7 @@ import { useLang } from '../contexts/LangContext'
 import NavBar from '../components/NavBar'
 import anrLogo from '../assets/logos/ANR-cop.png'
 import culturelabLogo from '../assets/logos/culture.png'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import {
   BarChart,
@@ -41,13 +41,6 @@ const homeTranslations = {
     todaysNews: "Today's News",
     otherStories: 'Other Stories',
     yourStats: 'Your Stats',
-    friends: 'Friends',
-    addFriend: 'Add Friend',
-    addFriendPlaceholder: 'Enter participant code...',
-    noFriends: 'No friends yet — add someone to compete!',
-    leaderboard: 'Leaderboard',
-    requestSent: 'Request sent!',
-    gamesPlayed: 'games',
   },
   fr: {
     daily: 'LE QUOTIDIEN',
@@ -71,13 +64,6 @@ const homeTranslations = {
     todaysNews: "Actualité du jour",
     otherStories: 'Autres articles',
     yourStats: 'Vos Stats',
-    friends: 'Amis',
-    addFriend: 'Ajouter',
-    addFriendPlaceholder: 'Code participant...',
-    noFriends: "Pas encore d'amis — ajoutez quelqu'un pour vous mesurer à eux !",
-    leaderboard: 'Classement',
-    requestSent: 'Demande envoyée !',
-    gamesPlayed: 'parties',
   },
 }
 
@@ -458,344 +444,6 @@ const CustomBlockShape = (props: CustomBlockShapeProps) => {
   )
 }
 
-function FriendStatsPanel({ participantCode }: { participantCode: string }) {
-  const { lang } = useLang()
-  const t = homeTranslations[lang]
-  const [subTab, setSubTab] = useState(0)
-
-  const { data: sessions = [], isLoading } = useQuery<QuizSession[]>({
-    queryKey: ['friend-stats', participantCode],
-    queryFn: async () => {
-      const res = await fetch(`/api/friends/${participantCode}/stats`, { credentials: 'include' })
-      if (!res.ok) return []
-      return res.json()
-    },
-  })
-
-  const POSColors: Record<string, string> = {
-    '1111': '#FF6B6B', '2222': '#4ECDC4', '3333': '#4CAF50',
-    '4444': '#FFE66D', '5555': '#C7CEEA', '6666': '#FFA500',
-  }
-
-  const chartData = sessions.map((s, i) => {
-    const blocks: { color: string }[] = []
-    const correctGuesses = (s as any).correct_guesses || []
-    if (Array.isArray(correctGuesses) && correctGuesses.length > 0) {
-      correctGuesses.forEach((g: { part_of_speech: string }) => {
-        blocks.push({ color: POSColors[g.part_of_speech] || '#999' })
-      })
-    }
-    if (blocks.length === 0) blocks.push({ color: '#ccc' })
-    return { game: i + 1, score: s.score, blocks }
-  })
-
-  const total = sessions.length
-  const best = total ? Math.max(...sessions.map(s => s.score)) : 0
-  const average = total ? Math.round((sessions.reduce((sum, s) => sum + s.score, 0) / total) * 10) / 10 : 0
-  const totalScore = sessions.reduce((sum, s) => sum + s.score, 0)
-
-  return (
-    <Box sx={{ mt: 2, border: '2px solid #000', borderRadius: 0, overflow: 'hidden' }}>
-      {/* Sub-tab header */}
-      <Box sx={{ borderBottom: '1px solid #eee', display: 'flex' }}>
-        {[lang === 'en' ? "Today's Article" : "Article du jour", lang === 'en' ? 'Overall' : 'Global'].map((label, i) => (
-          <Box
-            key={label}
-            onClick={() => setSubTab(i)}
-            sx={{
-              px: 2.5, py: 1.2, cursor: 'pointer',
-              fontFamily: 'Cormorant Garamond, serif',
-              fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: subTab === i ? 700 : 400,
-              color: subTab === i ? '#000' : '#aaa',
-              borderBottom: subTab === i ? '2px solid #000' : '2px solid transparent',
-              mb: '-1px', transition: 'all 0.15s',
-              '&:hover': { color: '#333' },
-            }}
-          >
-            {label}
-          </Box>
-        ))}
-      </Box>
-
-      <Box sx={{ p: 2.5, background: '#fafafa' }}>
-        {subTab === 0 && (
-          <Typography sx={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#999', fontStyle: 'italic', py: 1 }}>
-            {lang === 'en'
-              ? 'Daily articles coming soon — scores for today\'s article will appear here.'
-              : "Les articles quotidiens arrivent bientôt — les scores d'aujourd'hui apparaîtront ici."}
-          </Typography>
-        )}
-
-        {subTab === 1 && isLoading && <Skeleton variant="rounded" height={160} />}
-
-        {subTab === 1 && !isLoading && total === 0 && (
-          <Typography sx={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#999', fontStyle: 'italic', py: 1 }}>
-            {lang === 'en' ? 'No games played yet.' : 'Aucune partie jouée.'}
-          </Typography>
-        )}
-
-        {subTab === 1 && !isLoading && total > 0 && (
-          <>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1.5, mb: 2.5 }}>
-              {[
-                { value: total, label: t.games },
-                { value: best, label: t.best },
-                { value: average, label: t.average },
-                { value: totalScore, label: t.totalScore },
-              ].map(({ value, label }) => (
-                <Card key={label} sx={{ px: 1.5, py: 1.5, borderRadius: 0, background: '#fff', border: '1px solid #ddd', boxShadow: 'none', textAlign: 'center' }}>
-                  <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '20px', fontWeight: 'bold', color: '#000' }}>
-                    {value}
-                  </Typography>
-                  <Box sx={{ height: '1px', background: '#ddd', my: 0.8 }} />
-                  <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '8px', color: '#666', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 500 }}>
-                    {label}
-                  </Typography>
-                </Card>
-              ))}
-            </Box>
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="2 4" stroke="rgba(0,0,0,0.06)" vertical={false} />
-                <XAxis dataKey="game" tick={{ fontSize: 7, fill: '#aaa' }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 7, fill: '#aaa' }} tickLine={false} axisLine={false} domain={[0, 600]} />
-                <Tooltip
-                  contentStyle={{ borderRadius: 0, border: '1px solid #000', fontSize: 11, backgroundColor: '#fff', padding: '8px 10px' }}
-                  formatter={(value) => String(value)}
-                  labelFormatter={(_label, payload) => {
-                    const item = payload?.[0]?.payload as { game?: number; score?: number } | undefined
-                    return `Game ${item?.game ?? ''} — ${item?.score ?? 0}`
-                  }}
-                  cursor={{ fill: 'rgba(0,0,0,0.03)' }}
-                />
-                <Bar dataKey="score" radius={[0, 0, 0, 0]} shape={<CustomBlockShape chartData={chartData} />} />
-              </BarChart>
-            </ResponsiveContainer>
-          </>
-        )}
-      </Box>
-    </Box>
-  )
-}
-
-function FriendsSection() {
-  const { lang } = useLang()
-  const t = homeTranslations[lang]
-  const { user } = useAuth()
-  const queryClient = useQueryClient()
-  const [code, setCode] = useState('')
-  const [status, setStatus] = useState<string | null>(null)
-  const [selectedFriend, setSelectedFriend] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-
-  const copyCode = () => {
-    if (user?.participant_code) {
-      navigator.clipboard.writeText(user.participant_code)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
-  }
-
-  const { data: friends = [] } = useQuery<{ participant_code: string; total_score: number; games_played: number }[]>({
-    queryKey: ['friends'],
-    queryFn: async () => {
-      const res = await fetch('/api/friends', { credentials: 'include' })
-      if (!res.ok) return []
-      return res.json()
-    },
-    refetchOnWindowFocus: true,
-  })
-
-  const { data: pendingRequests = [] } = useQuery<{ id: number; sender_code: string; created_at: number }[]>({
-    queryKey: ['friend-requests'],
-    queryFn: async () => {
-      const res = await fetch('/api/friends/requests', { credentials: 'include' })
-      if (!res.ok) return []
-      return res.json()
-    },
-    refetchOnWindowFocus: true,
-    refetchInterval: 15000,
-  })
-
-  const handleAccept = async (id: number) => {
-    await fetch(`/api/friends/accept/${id}`, { method: 'POST', credentials: 'include' })
-    queryClient.invalidateQueries({ queryKey: ['friend-requests'] })
-    queryClient.invalidateQueries({ queryKey: ['friends'] })
-  }
-
-  const handleDecline = async (id: number) => {
-    await fetch(`/api/friends/decline/${id}`, { method: 'POST', credentials: 'include' })
-    queryClient.invalidateQueries({ queryKey: ['friend-requests'] })
-  }
-
-  const sendRequest = async () => {
-    if (!code.trim()) return
-    const res = await fetch('/api/friends/request', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ participant_code: code.trim().toUpperCase() }),
-    })
-    const data = await res.json()
-    if (res.ok) {
-      setStatus(t.requestSent)
-      setCode('')
-      queryClient.invalidateQueries({ queryKey: ['friends'] })
-    } else {
-      setStatus(data.error || 'Error')
-    }
-    setTimeout(() => setStatus(null), 3000)
-  }
-
-  return (
-    <Box sx={{ width: '100%' }}>
-      {/* Your participant code */}
-      {user?.participant_code && (
-        <Box
-          onClick={copyCode}
-          sx={{
-            mb: 3, p: 2, border: '2px solid #000', display: 'flex', alignItems: 'center',
-            justifyContent: 'space-between', cursor: 'pointer', background: '#fff',
-            transition: 'background 0.15s', '&:hover': { background: '#f7f7f7' },
-          }}
-        >
-          <Box>
-            <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: '#999', mb: 0.3 }}>
-              {lang === 'en' ? 'Your Participant Code — share this with friends' : 'Votre code — partagez-le avec vos amis'}
-            </Typography>
-            <Typography sx={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: 700, letterSpacing: '4px', color: '#000' }}>
-              {user.participant_code}
-            </Typography>
-          </Box>
-          <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '10px', letterSpacing: '1px', textTransform: 'uppercase', color: copied ? '#4CAF50' : '#aaa' }}>
-            {copied ? (lang === 'en' ? 'Copied!' : 'Copié !') : (lang === 'en' ? 'Copy' : 'Copier')}
-          </Typography>
-        </Box>
-      )}
-
-      {/* Add friend row */}
-      <Box sx={{ display: 'flex', gap: 0, mb: 3, height: 44 }}>
-        <input
-          value={code}
-          onChange={e => setCode(e.target.value.toUpperCase())}
-          placeholder={t.addFriendPlaceholder}
-          onKeyDown={e => e.key === 'Enter' && sendRequest()}
-          style={{
-            flex: 1, padding: '0 14px', fontFamily: 'Georgia, serif',
-            fontSize: '13px', border: '2px solid #000', borderRight: 'none',
-            outline: 'none', background: '#fff', letterSpacing: '1px',
-          }}
-        />
-        <button
-          onClick={sendRequest}
-          style={{
-            padding: '0 22px', background: '#000', color: '#fff',
-            border: '2px solid #000', cursor: 'pointer',
-            fontFamily: 'Cormorant Garamond, serif', fontSize: '12px',
-            textTransform: 'uppercase', letterSpacing: '1.5px', whiteSpace: 'nowrap',
-          }}
-        >
-          {t.addFriend}
-        </button>
-      </Box>
-
-      {status && (
-        <Typography sx={{ fontSize: '0.78rem', color: '#666', mb: 2, fontStyle: 'italic', fontFamily: 'Georgia, serif' }}>
-          {status}
-        </Typography>
-      )}
-
-      {/* Pending incoming requests */}
-      {pendingRequests.length > 0 && (
-        <Paper elevation={0} sx={{ borderRadius: 0, border: '2px solid #000', overflow: 'hidden', mb: 3 }}>
-          <Box sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid #eee', background: '#fafafa' }}>
-            <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '11px', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700, color: '#333' }}>
-              {lang === 'en' ? 'Friend Requests' : "Demandes d'amis"}
-            </Typography>
-          </Box>
-          {pendingRequests.map((req, i) => (
-            <Box key={req.id} sx={{ px: 2.5, py: 1.5, borderBottom: i < pendingRequests.length - 1 ? '1px solid #f0f0f0' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography sx={{ fontFamily: 'Georgia, serif', fontSize: '13px', letterSpacing: '1px', color: '#222' }}>
-                {req.sender_code}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <button
-                  onClick={() => handleAccept(req.id)}
-                  style={{ padding: '4px 14px', background: '#000', color: '#fff', border: '2px solid #000', cursor: 'pointer', fontFamily: 'Cormorant Garamond, serif', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}
-                >
-                  {lang === 'en' ? 'Accept' : 'Accepter'}
-                </button>
-                <button
-                  onClick={() => handleDecline(req.id)}
-                  style={{ padding: '4px 14px', background: '#fff', color: '#000', border: '2px solid #000', cursor: 'pointer', fontFamily: 'Cormorant Garamond, serif', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}
-                >
-                  {lang === 'en' ? 'Decline' : 'Refuser'}
-                </button>
-              </Box>
-            </Box>
-          ))}
-        </Paper>
-      )}
-
-      {/* Friends leaderboard */}
-      {friends.length === 0 ? (
-        <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', color: '#888', fontStyle: 'italic', mt: 2 }}>
-          {t.noFriends}
-        </Typography>
-      ) : (
-        <Paper elevation={0} sx={{ borderRadius: 0, border: '2px solid #000', overflow: 'hidden' }}>
-          <Box sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid #eee', background: '#fafafa' }}>
-            <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '11px', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700, color: '#333' }}>
-              {t.leaderboard}
-            </Typography>
-          </Box>
-          {friends.map((friend, i) => {
-            const isSelected = selectedFriend === friend.participant_code
-            return (
-              <Box key={friend.participant_code}>
-                <Box
-                  onClick={() => setSelectedFriend(isSelected ? null : friend.participant_code)}
-                  sx={{
-                    display: 'flex', alignItems: 'center', px: 2.5, py: 1.8,
-                    borderBottom: (!isSelected && i < friends.length - 1) ? '1px solid #f0f0f0' : 'none',
-                    background: isSelected ? '#f7f7f7' : '#fff',
-                    cursor: 'pointer',
-                    transition: 'background 0.15s',
-                    '&:hover': { background: '#f7f7f7' },
-                  }}
-                >
-                  <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '16px', fontWeight: 'bold', color: i === 0 ? '#000' : '#bbb', mr: 2.5, minWidth: 20, textAlign: 'center' }}>
-                    {i + 1}
-                  </Typography>
-                  <Typography sx={{ fontFamily: 'Georgia, serif', fontSize: '13px', flex: 1, letterSpacing: '1px', color: '#222' }}>
-                    {friend.participant_code}
-                  </Typography>
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '22px', fontWeight: 'bold', lineHeight: 1 }}>
-                      {friend.total_score}
-                    </Typography>
-                    <Typography sx={{ fontSize: '9px', color: '#aaa', textTransform: 'uppercase', letterSpacing: '1px', mt: 0.3 }}>
-                      {friend.games_played} {t.gamesPlayed}
-                    </Typography>
-                  </Box>
-                  <Typography sx={{ ml: 1.5, fontSize: '10px', color: '#ccc' }}>
-                    {isSelected ? '▲' : '▼'}
-                  </Typography>
-                </Box>
-                {isSelected && (
-                  <Box sx={{ px: 2, pb: 2, borderBottom: i < friends.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
-                    <FriendStatsPanel participantCode={friend.participant_code} />
-                  </Box>
-                )}
-              </Box>
-            )
-          })}
-        </Paper>
-      )}
-    </Box>
-  )
-}
-
 export default function Home() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -805,7 +453,6 @@ export default function Home() {
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false)
   const [feedbackText, setFeedbackText] = useState('')
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
-  const [activeTab, setActiveTab] = useState(0)
 
   return (
     <>
@@ -916,38 +563,7 @@ export default function Home() {
 
         {user && (
           <Container maxWidth="md">
-            <Box sx={{ mb: 3 }}>
-              <Tabs
-                value={activeTab}
-                onChange={(_, v) => setActiveTab(v)}
-                sx={{
-                  borderBottom: '2px solid #000',
-                  minHeight: 'unset',
-                  '& .MuiTabs-indicator': { backgroundColor: '#000', height: '2px' },
-                }}
-              >
-                {[t.yourStats, t.friends].map((label, i) => (
-                  <Tab
-                    key={label}
-                    label={label}
-                    sx={{
-                      fontFamily: 'Cormorant Garamond, serif',
-                      fontSize: '11px',
-                      letterSpacing: '1.5px',
-                      textTransform: 'uppercase',
-                      fontWeight: activeTab === i ? 700 : 500,
-                      color: activeTab === i ? '#000' : '#999',
-                      minHeight: 'unset',
-                      py: 1.2,
-                      px: 2.5,
-                      '&.Mui-selected': { color: '#000' },
-                    }}
-                  />
-                ))}
-              </Tabs>
-            </Box>
-            {activeTab === 0 && <StatsSection />}
-            {activeTab === 1 && <FriendsSection />}
+            <StatsSection />
           </Container>
         )}
 
