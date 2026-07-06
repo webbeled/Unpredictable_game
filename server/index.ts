@@ -17,6 +17,7 @@ const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || "localhost";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
@@ -57,6 +58,7 @@ app.get('/api/quiz/daily', async (req, res) => {
     if (token) {
       try {
         const payload = jwt.verify(token, JWT_SECRET) as { userId: string };
+        if (!UUID_RE.test(payload.userId)) throw new Error('not a uuid')
         const result = await pool.query(
           'SELECT score FROM daily_plays WHERE user_uuid = $1 AND day_epoch = $2',
           [payload.userId, dayEpoch]
@@ -89,6 +91,8 @@ app.post('/api/quiz/daily/played', async (req, res) => {
   } catch {
     res.status(401).json({ error: 'Invalid token' }); return;
   }
+
+  if (!UUID_RE.test(userId)) { res.status(401).json({ error: 'Session expired, please log in again' }); return; }
 
   const score = typeof req.body.score === 'number' ? req.body.score : 0;
   const dayEpoch = getDayEpoch();
