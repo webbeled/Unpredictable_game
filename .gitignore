@@ -15,9 +15,9 @@ dist-ssr
 .env
 
 # Scripts (data export utilities)
-scripts/export_*.js
-scripts/generate_*.js
-scripts/test_*.js
+scripts/export/export_*.js
+scripts/maintenance/generate_*.js
+scripts/maintenance/test_*.js
 
 # Data exports and lock files - keep these private
 *.csv
