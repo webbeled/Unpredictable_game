@@ -11,114 +11,60 @@ const __dirname = path.dirname(__filename);
 
 config();
 
-const timestamp = new Date().toISOString().slice(0, 10);
+const now = new Date();
+const timestamp = now.toISOString().replace('T', '_').slice(0, 16).replace(':', '-');
 
 const client = new Client({
   connectionString: process.env.DATABASE_URL
 });
 
+function cleanOldExports(prefix) {
+  const files = fs.readdirSync(__dirname).filter(f => f.startsWith(prefix) && f.endsWith('.csv'));
+  files.forEach(f => fs.unlinkSync(path.join(__dirname, f)));
+}
+
 async function exportUsers() {
   try {
     const result = await client.query(`
       SELECT
-        user_uuid as user_id,
-        email,
-        participant_code,
-        gender,
-        location as nationality,
-        english_speaker as first_language_is_english,
-        created_at
-      FROM users
-      ORDER BY created_at ASC
+        u.user_uuid as user_id,
+        u.email,
+        u.participant_code,
+        u.gender,
+        u.location as nationality,
+        u.english_speaker as first_language_is_english,
+        u.age,
+        u.prolific_id,
+        u.created_at,
+        COALESCE(SUM(qs.score), 0) as total_score
+      FROM users u
+      LEFT JOIN quiz_sessions qs ON qs.user_id = u.user_uuid
+      GROUP BY u.user_uuid, u.email, u.participant_code, u.gender, u.location, u.english_speaker, u.age, u.prolific_id, u.created_at
+      ORDER BY u.created_at ASC
     `);
 
     const rows = result.rows;
-    if (rows.length === 0) {
-      console.log('No users found');
-      return;
-    }
+    if (rows.length === 0) { console.log('No users found'); return; }
 
-    // Create CSV header
     const headers = Object.keys(rows[0]);
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => 
+      ...rows.map(row =>
         headers.map(header => {
           const value = row[header];
           if (value === null || value === undefined) return '';
-          if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
-            return `"${value.replace(/"/g, '""')}"`;
-          }
-          return value;
+          const str = String(value);
+          return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
         }).join(',')
       )
     ].join('\n');
 
+    cleanOldExports('users_export_');
     const filename = path.join(__dirname, `users_export_${timestamp}.csv`);
     fs.writeFileSync(filename, csvContent, 'utf8');
     console.log(`✓ Users exported to ${filename} (${rows.length} rows)`);
   } catch (err) {
     console.error('Error exporting users:', err.message);
-  }
-}
-
-async function exportScores() {
-  try {
-    const result = await client.query(`
-      SELECT
-        qs.id as session_id,
-        u.user_uuid as user_id,
-        u.participant_code,
-        u.location as nationality,
-        u.english_speaker as first_language_is_english,
-        qs.quiz_id as paragraph_id,
-        qs.score as final_score,
-        to_timestamp(qs.created_at::double precision / 1000) AT TIME ZONE 'UTC' as session_start,
-        to_timestamp(qs.ended_at::double precision / 1000) AT TIME ZONE 'UTC' as session_end,
-        qs.adj_correct,
-        qs.func_correct,
-        qs.noun_correct,
-        qs.num_correct,
-        qs.propn_correct,
-        qs.verb_correct,
-        COUNT(g.id) as total_guesses,
-        COUNT(g.id) FILTER (WHERE g.correct = true) as correct_guesses
-      FROM quiz_sessions qs
-      LEFT JOIN users u ON qs.user_id = u.user_uuid
-      LEFT JOIN guesses g ON qs.id = g.session_id
-      GROUP BY qs.id, u.user_uuid, u.participant_code, u.location, u.english_speaker,
-               qs.quiz_id, qs.score, qs.created_at, qs.ended_at,
-               qs.adj_correct, qs.func_correct, qs.noun_correct, qs.num_correct, qs.propn_correct, qs.verb_correct
-      ORDER BY qs.created_at ASC
-    `);
-
-    const rows = result.rows;
-    if (rows.length === 0) {
-      console.log('No game scores found');
-      return;
-    }
-
-    // Create CSV header
-    const headers = Object.keys(rows[0]);
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => 
-        headers.map(header => {
-          const value = row[header];
-          if (value === null || value === undefined) return '';
-          if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
-            return `"${value.replace(/"/g, '""')}"`;
-          }
-          return value;
-        }).join(',')
-      )
-    ].join('\n');
-
-    const filename = path.join(__dirname, `game_scores_export_${timestamp}.csv`);
-    fs.writeFileSync(filename, csvContent, 'utf8');
-    console.log(`✓ Game scores exported to ${filename} (${rows.length} rows)`);
-  } catch (err) {
-    console.error('Error exporting scores:', err.message);
   }
 }
 
@@ -148,10 +94,7 @@ async function exportGuesses() {
     `);
 
     const rows = result.rows;
-    if (rows.length === 0) {
-      console.log('No guesses found');
-      return;
-    }
+    if (rows.length === 0) { console.log('No guesses found'); return; }
 
     const headers = [
       'user_id', 'participant_code', 'session_id', 'paragraph_id', 'language',
@@ -199,6 +142,7 @@ async function exportGuesses() {
       }).join(','))
     ].join('\n');
 
+    cleanOldExports('guesses_export_');
     const filename = path.join(__dirname, `guesses_export_${timestamp}.csv`);
     fs.writeFileSync(filename, csvContent, 'utf8');
     console.log(`✓ Guesses exported to ${filename} (${rows.length} rows)`);
@@ -216,10 +160,7 @@ async function exportFeedback() {
     `);
 
     const rows = result.rows;
-    if (rows.length === 0) {
-      console.log('No feedback found');
-      return;
-    }
+    if (rows.length === 0) { console.log('No feedback found'); return; }
 
     const headers = Object.keys(rows[0]);
     const csvContent = [
@@ -234,6 +175,7 @@ async function exportFeedback() {
       )
     ].join('\n');
 
+    cleanOldExports('feedback_export_');
     const filename = path.join(__dirname, `feedback_export_${timestamp}.csv`);
     fs.writeFileSync(filename, csvContent, 'utf8');
     console.log(`✓ Feedback exported to ${filename} (${rows.length} rows)`);
@@ -248,7 +190,6 @@ async function main() {
     console.log('Connected to database...\n');
 
     await exportUsers();
-    await exportScores();
     await exportGuesses();
     await exportFeedback();
 

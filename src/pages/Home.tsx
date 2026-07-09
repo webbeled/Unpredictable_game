@@ -35,9 +35,12 @@ const homeTranslations = {
     games: 'Games',
     best: 'Best',
     average: 'Average',
-    latest: 'Latest',
+    totalScore: 'Total Score',
     progression: 'Your Progression',
     attentionHeader: 'Attention Clever Readers',
+    todaysNews: "Today's News",
+    otherStories: 'Other Stories',
+    yourStats: 'Your Stats',
   },
   fr: {
     daily: 'LE QUOTIDIEN',
@@ -55,9 +58,12 @@ const homeTranslations = {
     games: 'Parties',
     best: 'Meilleur',
     average: 'Moyenne',
-    latest: 'Dernier',
+    totalScore: 'Score total',
     progression: 'Votre progression',
     attentionHeader: 'Attention Lecteurs Perspicaces',
+    todaysNews: "Actualité du jour",
+    otherStories: 'Autres articles',
+    yourStats: 'Vos Stats',
   },
 }
 
@@ -320,7 +326,7 @@ function StatsSection() {
           { value: total, label: t.games, dark: false },
           { value: best, label: t.best, dark: false },
           { value: average, label: t.average, dark: false },
-          { value: sessions[sessions.length - 1].score, label: t.latest, dark: true },
+          { value: sessions.reduce((sum, s) => sum + s.score, 0), label: t.totalScore, dark: true },
         ].map(({ value, label, dark }) => (
           <Card
             key={label}
@@ -503,27 +509,51 @@ export default function Home() {
               NewsGap
             </Typography>
 
-            <Button
-              variant="contained"
-              startIcon={<PlayArrowIcon />}
-              onClick={() => navigate('/quiz')}
-              sx={{
-                fontFamily: 'Didot, Georgia, serif',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                px: 8,
-                py: 2.5,
-                backgroundColor: '#000',
-                color: '#fff',
-                border: '2px solid #000',
-                letterSpacing: '0.5px',
-                textTransform: 'uppercase',
-                '&:hover': { backgroundColor: '#fff', color: '#000' },
-                transition: 'all 0.3s ease',
-              }}
-            >
-              {t.startQuiz}
-            </Button>
+            <Box sx={{ display: 'inline-flex', border: '2px solid #000', overflow: 'hidden' }}>
+              <Button
+                startIcon={<PlayArrowIcon />}
+                onClick={() => navigate('/quiz', { state: { daily: true } })}
+                sx={{
+                  fontFamily: 'Didot, Georgia, serif',
+                  fontSize: '15px',
+                  fontWeight: 'bold',
+                  px: 4,
+                  py: 2,
+                  backgroundColor: '#000',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 0,
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  '&:hover': { backgroundColor: '#222' },
+                  transition: 'background 0.2s ease',
+                }}
+              >
+                {t.todaysNews}
+              </Button>
+              <Box sx={{ width: '1px', background: '#444', flexShrink: 0 }} />
+              <Button
+                startIcon={<PlayArrowIcon />}
+                onClick={() => navigate('/quiz')}
+                sx={{
+                  fontFamily: 'Didot, Georgia, serif',
+                  fontSize: '15px',
+                  fontWeight: 'bold',
+                  px: 4,
+                  py: 2,
+                  backgroundColor: '#000',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 0,
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  '&:hover': { backgroundColor: '#222' },
+                  transition: 'background 0.2s ease',
+                }}
+              >
+                {t.otherStories}
+              </Button>
+            </Box>
           </Box>
 
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>

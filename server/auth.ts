@@ -14,8 +14,8 @@ function generateParticipantCode() {
 }
 
 router.post('/register', async (req: Request, res: Response) => {
-  const { email, password, nationality, gender, firstLanguageEnglish, age } = req.body
-  console.log('Register request:', { email, nationality, gender, firstLanguageEnglish, age })
+  const { email, password, nationality, gender, firstLanguageEnglish, age, prolificId } = req.body
+  console.log('Register request:', { email, nationality, gender, firstLanguageEnglish, age, prolificId })
   if (!email || !password) {
     res.status(400).json({ error: 'Email and password are required' })
     return
@@ -37,8 +37,8 @@ router.post('/register', async (req: Request, res: Response) => {
     // Try with demographic fields first, fall back to basic fields if columns don't exist
     try {
       await pool.query(
-        'INSERT INTO users (email, password_hash, participant_code, gender, english_speaker, location, age) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [email, passwordHash, participantCode, gender || null, firstLanguageEnglish ?? null, nationality || null, age ? parseInt(age) : null]
+        'INSERT INTO users (email, password_hash, participant_code, gender, english_speaker, location, age, prolific_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [email, passwordHash, participantCode, gender || null, firstLanguageEnglish ?? null, nationality || null, age ? parseInt(age) : null, prolificId || null]
       )
     } catch (err: unknown) {
       const pgErr = err as { code?: string; message?: string }
@@ -83,7 +83,7 @@ router.post('/login', async (req: Request, res: Response) => {
       res.status(401).json({ error: 'Invalid email or password' })
       return
     }
-    const token = jwt.sign({ userId: user.user_uuid, email: user.email }, JWT_SECRET, { expiresIn: '7d' })
+    const token = jwt.sign({ userId: user.user_uuid, intId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' })
     res.cookie('token', token, {
       httpOnly: true,
       sameSite: 'strict',
@@ -117,16 +117,16 @@ router.get('/me', (req: Request, res: Response) => {
   try {
     const payload = jwt.verify(token, JWT_SECRET) as { userId: string; email: string }
     // Look up user demographics for this user
-    pool.query('SELECT participant_code, nationality, gender, first_language_is_english FROM users WHERE user_uuid = $1', [payload.userId])
+    pool.query('SELECT participant_code, location, gender, english_speaker FROM users WHERE user_uuid = $1', [payload.userId])
       .then((r) => {
         const user = r.rows[0]
-        res.json({ 
-          id: payload.userId, 
-          email: payload.email, 
+        res.json({
+          id: payload.userId,
+          email: payload.email,
           participant_code: user?.participant_code ?? null,
-          nationality: user?.nationality ?? null,
+          nationality: user?.location ?? null,
           gender: user?.gender ?? null,
-          first_language_is_english: user?.first_language_is_english ?? null,
+          first_language_is_english: user?.english_speaker ?? null,
         })
       })
       .catch((err) => {

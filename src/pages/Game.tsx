@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useLocation } from 'react-router-dom'
 import { Container, Box, Typography, Button, Alert, CircularProgress, TextField, Chip, Stack, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material'
 import { useConfig } from '../contexts/ConfigContext'
 import { useLang } from '../contexts/LangContext'
@@ -100,17 +101,20 @@ function playSuccessSound(currentScore: number) {
   }
 }
 
+
 export default function Game() {
   const { config } = useConfig()
   const { lang } = useLang()
   const queryClient = useQueryClient()
+  const location = useLocation()
+  const isDaily = !!(location.state as any)?.daily
   const t = gameTranslations[lang]
   const MASK_LABELS = MASK_LABELS_BY_LANG[lang]
 
   const [guess, setGuess] = useState('')
   const [guesses, setGuesses] = useState<Map<string, Set<string>>>(new Map())
   const [guessError, setGuessError] = useState<string | null>(null)
-  const [revealedMasks, setRevealedMasks] = useState<Map<string, string>>(new Map()) // mask -> word mapping
+  const [revealedMasks, setRevealedMasks] = useState<Map<string, string>>(new Map())
   const [score, setScore] = useState(0)
   const [selectedMask, setSelectedMask] = useState<string | null>(null)
   const [timeRemaining, setTimeRemaining] = useState(config.timerDuration)
@@ -120,8 +124,28 @@ export default function Game() {
   const [scorePerPos, setScorePerPos] = useState<Map<string, number>>(new Map())
   const [scoreBumpKey, setScoreBumpKey] = useState(0)
   const [scoreFinalized, setScoreFinalized] = useState(false)
+  const [nextArticleCountdown, setNextArticleCountdown] = useState('')
 
-  const { data: randomEntry, isLoading, error, refetch } = useQuiz(lang)
+  // Countdown to next daily reset (2AM GMT)
+  useEffect(() => {
+    if (!isDaily || !isRevealed) return
+    const tick = () => {
+      const now = new Date()
+      const next = new Date(now)
+      next.setUTCHours(2, 0, 0, 0)
+      if (now.getUTCHours() >= 2) next.setUTCDate(next.getUTCDate() + 1)
+      const diff = next.getTime() - now.getTime()
+      const h = Math.floor(diff / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      setNextArticleCountdown(`${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`)
+    }
+    tick()
+    const interval = setInterval(tick, 1000)
+    return () => clearInterval(interval)
+  }, [isDaily, isRevealed])
+
+  const { data: randomEntry, isLoading, error, refetch } = useQuiz(lang, isDaily)
 
   const presentMasks = useMemo(() => {
     if (!randomEntry?.annotate) return new Set<string>()
@@ -136,12 +160,29 @@ export default function Game() {
   const answerFetchedRef = useRef(false)
   const guessCounter = useRef<number>(0)
 
-  // Record start time whenever a new quiz loads
+  // When quiz data loads: either init revealed state (already played) or start fresh
   useEffect(() => {
-    if (randomEntry?.id) {
+    if (!randomEntry?.id) return
+    if (isDaily && randomEntry.alreadyPlayed) {
+      sessionSaved.current = true
+      setScore(randomEntry.previousScore ?? 0)
+      setTimeRemaining(0)
+      setIsRevealed(true)
+      setScoreFinalized(true)
+    } else {
       quizStartedAt.current = Date.now()
       sessionSaved.current = false
       finalSessionPayloadRef.current = null
+      guessCounter.current = 0
+      // Mark daily as started immediately (score 0) so navigating away still counts as played
+      if (isDaily) {
+        fetch('/api/quiz/daily/played', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ score: 0 }),
+        }).catch(() => {})
+      }
     }
   }, [randomEntry?.id])
 
@@ -269,6 +310,14 @@ export default function Game() {
   useEffect(() => {
     if (isRevealed) {
       saveQuizSessionRef.current(Date.now())
+      if (isDaily && !randomEntry?.alreadyPlayed) {
+        fetch('/api/quiz/daily/played', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ score }),
+        }).catch((err) => console.error('Failed to record daily play:', err))
+      }
       const t = setTimeout(() => setScoreFinalized(true), 400)
       return () => clearTimeout(t)
     }
@@ -341,6 +390,7 @@ export default function Game() {
       setSelectedMask(null)
       finalSessionPayloadRef.current = null
       answerFetchedRef.current = false
+      guessCounter.current = 0
     } catch (err) {
       console.error('Error starting new game:', err)
       window.location.reload()
@@ -349,6 +399,7 @@ export default function Game() {
 
   useEffect(() => {
     if (isRevealed) return
+    if (isDaily && !randomEntry?.id) return // Wait until server tells us if already played
 
     if (timeRemaining <= 0) {
       finalSessionPayloadRef.current = buildQuizSessionPayload(Date.now())
@@ -370,7 +421,7 @@ export default function Game() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [isRevealed, timeRemaining])
+  }, [isRevealed, timeRemaining, randomEntry?.id])
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
@@ -724,7 +775,7 @@ export default function Game() {
                     {t.giveUp}
                   </Button>
                 )}
-                {isRevealed && (
+                {isRevealed && !isDaily && (
                   <Button
                     variant="outlined"
                     onClick={handleNewGame}
@@ -735,14 +786,21 @@ export default function Game() {
                       fontSize: '0.85rem',
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
-                      '&:hover': {
-                        backgroundColor: '#000000',
-                        color: '#ffffff',
-                      },
+                      '&:hover': { backgroundColor: '#000000', color: '#ffffff' },
                     }}
                   >
                     {t.next}
                   </Button>
+                )}
+                {isRevealed && isDaily && (
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '11px', letterSpacing: '1.5px', textTransform: 'uppercase', color: '#888', mb: 0.5 }}>
+                      {lang === 'en' ? 'Next article in' : 'Prochain article dans'}
+                    </Typography>
+                    <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '22px', fontWeight: 'bold', letterSpacing: '2px', color: '#000' }}>
+                      {nextArticleCountdown}
+                    </Typography>
+                  </Box>
                 )}
               </Box>
 

@@ -3,18 +3,21 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
-import { getRandomQuiz, getQuizAnswer, checkGuess, getRandomUnseenQuiz } from './data.js';
+import { getRandomQuiz, getQuizAnswer, checkGuess, getRandomUnseenQuiz, getDailyQuiz, getNextDailyReset, getDayEpoch } from './data.js';
+import { pool } from './db/index.js';
 
 import authRouter from './auth.js';
 import quizSessionsRouter from './quizSessions.js';
 import guessesRouter from './guesses.js';
-import feedbackRouter from './feedback.js';
+import feedbackRouter from './feedback.js'
+
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || "localhost";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
@@ -38,6 +41,73 @@ app.get('/api/quiz/', (req, res) => {
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
+});
+
+// Daily article — same for every user, resets at 2AM GMT
+app.get('/api/quiz/daily', async (req, res) => {
+  try {
+    const lang = (req.query.lang as string || 'en').toLowerCase() as 'en' | 'fr';
+    const quiz = getDailyQuiz(lang);
+    const nextReset = getNextDailyReset();
+    const dayEpoch = getDayEpoch();
+
+    let alreadyPlayed = false;
+    let previousScore = 0;
+
+    const token = req.cookies?.token;
+    if (token) {
+      try {
+        const payload = jwt.verify(token, JWT_SECRET) as { userId: string };
+        if (!UUID_RE.test(payload.userId)) throw new Error('not a uuid')
+        const result = await pool.query(
+          'SELECT score FROM daily_plays WHERE user_uuid = $1 AND day_epoch = $2',
+          [payload.userId, dayEpoch]
+        );
+        if (result.rows.length > 0) {
+          alreadyPlayed = true;
+          previousScore = result.rows[0].score;
+        }
+      } catch {
+        // Invalid token, or daily_plays table not yet created — treat as not played
+      }
+    }
+
+    res.json({ ...quiz, nextReset: nextReset.toISOString(), alreadyPlayed, previousScore });
+  } catch (error) {
+    console.error('Error getting daily quiz:', error);
+    res.status(500).json({ error: 'Failed to get daily quiz' });
+  }
+});
+
+// Record that a user has completed today's daily article
+app.post('/api/quiz/daily/played', async (req, res) => {
+  const token = req.cookies?.token;
+  if (!token) { res.status(401).json({ error: 'Not authenticated' }); return; }
+
+  let userId: string;
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string };
+    userId = payload.userId;
+  } catch {
+    res.status(401).json({ error: 'Invalid token' }); return;
+  }
+
+  if (!UUID_RE.test(userId)) { res.status(401).json({ error: 'Session expired, please log in again' }); return; }
+
+  const score = typeof req.body.score === 'number' ? req.body.score : 0;
+  const dayEpoch = getDayEpoch();
+
+  try {
+    await pool.query(
+      `INSERT INTO daily_plays (user_uuid, day_epoch, score) VALUES ($1, $2, $3)
+       ON CONFLICT (user_uuid, day_epoch) DO UPDATE SET score = GREATEST(daily_plays.score, EXCLUDED.score)`,
+      [userId, dayEpoch, score]
+    );
+  } catch {
+    // daily_plays table not yet created — ignore (local dev without migration)
+  }
+
+  res.json({ ok: true });
 });
 
 // API endpoint to get a random unseen quiz (respects user's seen articles)

@@ -5,6 +5,7 @@ import { pool } from './db/index.js'
 const router = Router()
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 router.post('/', async (req: Request, res: Response) => {
   // Allow anonymous guesses: if a valid token exists, set userId and userEmail; otherwise proceed with nulls
@@ -14,7 +15,7 @@ router.post('/', async (req: Request, res: Response) => {
   if (token) {
     try {
       const payload = jwt.verify(token, JWT_SECRET) as { userId: string; email: string }
-      userId = payload.userId
+      userId = UUID_RE.test(payload.userId) ? payload.userId : null
       userEmail = payload.email ?? null
     } catch (err) {
       // Invalid token: log and continue with anonymous (null) values

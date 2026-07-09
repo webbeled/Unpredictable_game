@@ -5,6 +5,7 @@ import { pool } from './db/index.js'
 const router = Router()
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 router.get('/', async (req: Request, res: Response) => {
   const token = req.cookies?.token
@@ -19,6 +20,11 @@ router.get('/', async (req: Request, res: Response) => {
     userId = payload.userId
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' })
+    return
+  }
+
+  if (!UUID_RE.test(userId)) {
+    res.status(401).json({ error: 'Session expired, please log in again' })
     return
   }
 
@@ -61,6 +67,11 @@ router.post('/', async (req: Request, res: Response) => {
     userId = payload.userId
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' })
+    return
+  }
+
+  if (!UUID_RE.test(userId)) {
+    res.status(401).json({ error: 'Session expired, please log in again' })
     return
   }
 

@@ -44,6 +44,8 @@ const translations = {
     yes: 'Yes',
     no: 'No',
     registerButton: 'Register',
+    prolificId: 'Prolific ID (optional)',
+    prolificHint: 'If you are a Prolific user, enter your Prolific ID here.',
   },
   fr: {
     loginTab: 'Connexion',
@@ -66,6 +68,8 @@ const translations = {
     yes: 'Oui',
     no: 'Non',
     registerButton: "S'inscrire",
+    prolificId: 'Identifiant Prolific (optionnel)',
+    prolificHint: 'Si vous êtes un utilisateur Prolific, entrez votre identifiant Prolific ici.',
   },
 }
 
@@ -77,6 +81,7 @@ export default function Auth() {
   const [gender, setGender] = useState('')
   const [age, setAge] = useState('')
   const [firstLanguageEnglish, setFirstLanguageEnglish] = useState<boolean | null>(null)
+  const [prolificId, setProlificId] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showConsentModal, setShowConsentModal] = useState(false)
@@ -94,7 +99,7 @@ export default function Auth() {
         await login(email, password)
         navigate('/quiz')
       } else {
-        await register(email, password, nationality, gender, firstLanguageEnglish, age)
+        await register(email, password, nationality, gender, firstLanguageEnglish, age, prolificId || undefined)
         setShowConsentModal(true)
       }
     } catch (err) {
@@ -437,6 +442,14 @@ export default function Auth() {
                   onChange={(e) => setAge(e.target.value)}
                   inputProps={{ min: 5, max: 120 }}
                   required
+                />
+
+                <TextField
+                  fullWidth
+                  label={t.prolificId}
+                  value={prolificId}
+                  onChange={(e) => setProlificId(e.target.value)}
+                  helperText={t.prolificHint}
                 />
 
                 <FormControl component="fieldset" fullWidth>
