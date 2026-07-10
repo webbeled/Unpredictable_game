@@ -188,7 +188,7 @@ function AnimatedNewspaper() {
     >
       <Typography
         sx={{
-          fontFamily: 'Cormorant Garamond, serif',
+          fontFamily: 'Newsreader, serif',
           fontSize: '11px',
           letterSpacing: '1.5px',
           color: '#666',
@@ -201,7 +201,7 @@ function AnimatedNewspaper() {
       </Typography>
       <Box
         sx={{
-          fontFamily: 'Georgia, serif',
+          fontFamily: 'Newsreader, serif',
           fontSize: '13px',
           lineHeight: '1.8',
           color: '#000',
@@ -256,7 +256,7 @@ function StatsSection() {
 
   if (!sessions || sessions.length === 0) {
     return (
-      <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', mt: 3, color: '#666' }}>
+      <Typography sx={{ fontFamily: 'Newsreader, serif', mt: 3, color: '#666' }}>
         {t.noGames}
       </Typography>
     )
@@ -343,11 +343,11 @@ function StatsSection() {
               },
             }}
           >
-            <Typography sx={{ fontFamily: 'Didot, Georgia, serif', fontSize: '28px', fontWeight: 'bold', color: dark ? '#fff' : '#000', letterSpacing: '-1px' }}>
+            <Typography sx={{ fontFamily: 'DM Sans, sans-serif', fontSize: '28px', fontWeight: 'bold', color: dark ? '#fff' : '#000', letterSpacing: '-1px' }}>
               {value}
             </Typography>
             <Box sx={{ height: '1px', background: dark ? '#fff' : '#000', my: 1.2, mx: 0 }} />
-            <Typography sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '9px', color: dark ? '#e0e0e0' : '#333', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 500 }}>
+            <Typography sx={{ fontFamily: 'Newsreader, serif', fontSize: '9px', color: dark ? '#e0e0e0' : '#333', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 500 }}>
               {label}
             </Typography>
           </Card>
@@ -359,7 +359,7 @@ function StatsSection() {
         sx={{ p: 3, borderRadius: 0, border: '2px solid #000', background: '#fafafa', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
       >
         <Typography
-          sx={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '13px', color: '#333', mb: 2.5, letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 500 }}
+          sx={{ fontFamily: 'Newsreader, serif', fontSize: '13px', color: '#333', mb: 2.5, letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 500 }}
         >
           {t.progression}
         </Typography>
@@ -509,19 +509,19 @@ export default function Home() {
               NewsGap
             </Typography>
 
-            <Box sx={{ display: 'inline-flex', border: '2px solid #000', overflow: 'hidden' }}>
+            <Box sx={{ display: 'inline-flex', gap: 1 }}>
               <Button
-                startIcon={<PlayArrowIcon />}
+
                 onClick={() => navigate('/quiz', { state: { daily: true } })}
                 sx={{
-                  fontFamily: 'Didot, Georgia, serif',
+                  fontFamily: 'Libre Franklin, sans-serif',
                   fontSize: '15px',
-                  fontWeight: 'bold',
+                  fontWeight: 700,
                   px: 4,
                   py: 2,
                   backgroundColor: '#000',
                   color: '#fff',
-                  border: 'none',
+                  border: '2px solid #000',
                   borderRadius: 0,
                   letterSpacing: '0.5px',
                   textTransform: 'uppercase',
@@ -531,19 +531,18 @@ export default function Home() {
               >
                 {t.todaysNews}
               </Button>
-              <Box sx={{ width: '1px', background: '#444', flexShrink: 0 }} />
               <Button
-                startIcon={<PlayArrowIcon />}
+
                 onClick={() => navigate('/quiz')}
                 sx={{
-                  fontFamily: 'Didot, Georgia, serif',
+                  fontFamily: 'Libre Franklin, sans-serif',
                   fontSize: '15px',
-                  fontWeight: 'bold',
+                  fontWeight: 700,
                   px: 4,
                   py: 2,
                   backgroundColor: '#000',
                   color: '#fff',
-                  border: 'none',
+                  border: '2px solid #000',
                   borderRadius: 0,
                   letterSpacing: '0.5px',
                   textTransform: 'uppercase',
