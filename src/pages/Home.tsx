@@ -1,5 +1,4 @@
 import { Box, Button, Typography, Paper, Card, Skeleton, Container, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
-import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useLang } from '../contexts/LangContext'
