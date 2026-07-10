@@ -2,7 +2,8 @@
 
 # Simple script to restart production services with password prompt
 
-HOST="okearey@newsgap.huma-num.fr"
+DEPLOY_USER="${DEPLOY_USER:-okearey}"
+HOST="$DEPLOY_USER@newsgap.huma-num.fr"
 
 echo "Connecting to production server to restart services..."
 echo "You will be prompted for SSH password below."

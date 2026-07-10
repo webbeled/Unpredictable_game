@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-SERVER="okearey@newsgap.huma-num.fr"
-REMOTE_DIR="/home/okearey/Unpredictable_game"
+DEPLOY_USER="${DEPLOY_USER:-okearey}"
+SERVER="$DEPLOY_USER@newsgap.huma-num.fr"
+REMOTE_DIR="/home/$DEPLOY_USER/Unpredictable_game"
 
 # Commit
 echo "=== Commit message ==="
