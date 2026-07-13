@@ -4,7 +4,11 @@ set -e
 DEPLOY_USER="${DEPLOY_USER:-okearey}"
 SERVER="$DEPLOY_USER@newsgap.huma-num.fr"
 REMOTE_DIR="/home/$DEPLOY_USER/Unpredictable_game"
-LOCAL_DIR="$(dirname "$0")/data_exports"
+if [ "$DEPLOY_USER" = "okearey" ]; then
+  LOCAL_DIR="/home/owenk/Desktop/Newsgap_data"
+else
+  LOCAL_DIR="$(dirname "$0")/data_exports"
+fi
 mkdir -p "$LOCAL_DIR"
 
 echo "=== Running export on server ==="
