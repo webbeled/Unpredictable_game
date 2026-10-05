@@ -341,6 +341,11 @@ function AnimatedNewspaper() {
         }}
       >
         {animationParts.map((item, idx) => {
+
+          if (typeof item === 'string') {
+            return <span key={idx}>{item}</span>
+          }
+          
           if (!item.color) {
             return <span key={idx}>{item.text}</span>
           }
