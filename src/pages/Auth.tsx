@@ -120,7 +120,7 @@ export default function Auth() {
       if (!response.ok) throw new Error('Failed to save consent')
       setShowConsentModal(false)
       await login(email, password)
-      navigate('/quiz')
+      navigate('/practice')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save consent')
     } finally {

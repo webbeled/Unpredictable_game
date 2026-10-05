@@ -9,6 +9,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Game from './pages/Game'
 import Auth from './pages/Auth'
 import Home from './pages/Home'
+import Practice from './pages/Practice'
 
 const queryClient = new QueryClient()
 
@@ -37,6 +38,7 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/quiz" element={<ProtectedRoute><Game /></ProtectedRoute>} />
+                  <Route path="/practice" element={<ProtectedRoute><Practice /></ProtectedRoute>} />
                 </Routes>
               </Router>
             </ConfigProvider>

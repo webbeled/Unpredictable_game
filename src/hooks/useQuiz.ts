@@ -46,8 +46,14 @@ export const useQuizAnswer = (id: string) => {
   return useQuery<QuizAnswer>({
     queryKey: ['quiz', id, 'answer'],
     queryFn: async () => {
-      const response = await fetch(`/api/quiz/${id}/answer`)
-      if (!response.ok) throw new Error('Failed to fetch answer')
+      const response = await fetch(`/api/quiz/${id}/answer`, {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch answer')
+      }
+
       return response.json()
     },
     enabled: false, // Don't fetch automatically
@@ -60,10 +66,16 @@ export const useGuessSubmit = (id: string) => {
       const response = await fetch(`/api/quiz/${id}/guess`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ guess }),
       })
-      if (!response.ok) throw new Error('Failed to submit guess')
+
+      if (!response.ok) {
+        throw new Error('Failed to submit guess')
+      }
+
       return response.json()
     },
   })
 }
+ 

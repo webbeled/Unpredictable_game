@@ -81,33 +81,55 @@ type AnimatedTextPart = {
 
 const maskedArticleText = {
   en: [
-    { text: 'Certain', color: '' },
-    { text: ' ', color: '' },
-    { text: 'words', color: '' },
-    { text: ' have been removed from this ', color: '' },
-    { text: '_______', color: '#FF6B6B' },
+    { text: 'Certain words have been removed from this ', color: '' },
+    { text: '_____', color: '#4CAF50' },
     { text: '. Can you ', color: '' },
+    { text: '_____', color: '#FFA500' },
+    { text: ' what they are? In this ', color: '' },
     { text: '_____', color: '#4ECDC4' },
-    { text: ' what they are? Use the color-coded hints and your ', color: '' },
-    { text: '_________', color: '#4CAF50' },
-    { text: ' to fill in the blanks before time runs out. Every correct ', color: '' },
-    { text: '______', color: '#FFE66D' },
-    { text: ' earns you ', color: '' },
-    { text: '______', color: '#C7CEEA' },
-    { text: '. Good luck!!', color: '' },
+    { text: ' game, use the color-coded hints and your knowledge ', color: '' },
+    { text: '_____', color: '#C7CEEA' },
+    { text: ' fill in the blanks before time runs out. Every correct answer earns you ', color: '' },
+    { text: '_____', color: '#FFE66D' },
+    { text: ' points. ', color: '' },
+    { text: '_____', color: '#FF6B6B' },
+    { text: ' luck!', color: '' },
+],
+
+  fr: [
+    { text: 'Certains mots ont été supprimés de ce ', color: '' },
+    { text: '_____', color: '#4CAF50' },
+    { text: '. Pouvez-vous ', color: '' },
+    { text: '_____', color: '#FFA500' },
+    { text: ' ce qu’ils sont ? Dans ce jeu ', color: '' },
+    { text: '_____', color: '#4ECDC4' },
+    { text: ', utilisez les indices colorés et vos connaissances ', color: '' },
+    { text: '_____', color: '#C7CEEA' },
+    { text: ' remplir les blancs avant la fin du temps. Chaque bonne réponse vous rapporte ', color: '' },
+    { text: '_____', color: '#FFE66D' },
+    { text: ' points. ', color: '' },
+    { text: '_____', color: '#FF6B6B' },
+    { text: ' chance !', color: '' },
+],
+
+}
+
+const animationAnswers = {
+  en: [
+    { category: 'Noun', answer: 'text', color: '#4CAF50' },
+    { category: 'Verb', answer: 'guess', color: '#FFA500' },
+    { category: 'Proper Noun', answer: 'NewsGap', color: '#C7CEEA' },
+    { category: 'Closed Class', answer: 'to', color: '#4ECDC4' },
+    { category: 'Number', answer: '100', color: '#FFE66D' },
+    { category: 'Adjective', answer: 'Good', color: '#FF6B6B' },
   ],
   fr: [
-    { text: 'Certains mots ont été supprimés de cet ', color: '' },
-    { text: '_______', color: '#FF6B6B' },
-    { text: '. Pouvez-vous ', color: '' },
-    { text: '_____', color: '#4ECDC4' },
-    { text: " deviner ce qu'ils sont ? Utilisez les indices colorés et votre ", color: '' },
-    { text: '_________', color: '#4CAF50' },
-    { text: ' pour remplir les blancs avant la fin du temps. Chaque bonne ', color: '' },
-    { text: '______', color: '#FFE66D' },
-    { text: ' vous rapporte ', color: '' },
-    { text: '______', color: '#C7CEEA' },
-    { text: '. Bonne chance !!', color: '' },
+    { category: 'Nom', answer: 'texte', color: '#4CAF50' },
+    { category: 'Verbe', answer: 'deviner', color: '#FFA500' },
+    { category: 'Nom propre', answer: 'NewsGap', color: '#C7CEEA' },
+    { category: 'Classe fermée', answer: 'pour', color: '#4ECDC4' },
+    { category: 'Nombre', answer: '100', color: '#FFE66D' },
+    { category: 'Adjectif', answer: 'Bonne', color: '#FF6B6B' },
   ],
 }
 
@@ -126,18 +148,30 @@ function AnimatedNewspaper() {
   const { lang } = useLang()
   const t = homeTranslations[lang]
   const maskedArticle = maskedArticleText[lang]
+  const answers = animationAnswers[lang]
+
   const [displayText, setDisplayText] = useState<Array<string | AnimatedTextPart>>([])
   const [isTyping, setIsTyping] = useState(true)
+  const [animationStage, setAnimationStage] = useState<'typing' | 'answers'>('typing')
+  const [animationIndex, setAnimationIndex] = useState(-1)
+  const [animationTextIndex, setAnimationTextIndex] = useState(0)
+
 
   useEffect(() => {
     setDisplayText([])
     setIsTyping(true)
+    setAnimationStage('typing')
+    setAnimationIndex(-1)
+    setAnimationTextIndex(0)
   }, [lang])
 
+  // Stage 1: type the original sentence
   useEffect(() => {
     if (!isTyping) return
 
     let charIndex = 0
+    const totalCharacters = maskedArticle.reduce((sum, item) => sum + item.text.length, 0)
+
     const timer = setInterval(() => {
       let currentChar = 0
       const builtText: Array<string | AnimatedTextPart> = []
@@ -158,16 +192,112 @@ function AnimatedNewspaper() {
         }
       }
 
-      if (charIndex < maskedArticle.reduce((sum, item) => sum + item.text.length, 0)) {
+      if (charIndex <= totalCharacters) {
         setDisplayText(builtText)
         charIndex++
       } else {
+        clearInterval(timer)
         setIsTyping(false)
+
+        setTimeout(() => {
+          setAnimationStage('answers')
+          setAnimationIndex(0)
+          setAnimationTextIndex(0)
+        }, 1000)
       }
     }, 30)
 
     return () => clearInterval(timer)
   }, [isTyping, maskedArticle])
+
+// Answers appear one by one, typing from left to right
+  useEffect(() => {
+    if (animationStage !== 'answers') return
+    if (animationIndex < 0 || animationIndex >= answers.length) return
+
+    const currentAnswer = answers[animationIndex].answer
+
+    // Type the current answer character by character
+    if (animationTextIndex < currentAnswer.length) {
+      const timer = setTimeout(() => {
+        setAnimationTextIndex(prev => prev + 1)
+      }, 60)
+
+      return () => clearTimeout(timer)
+    }
+
+    // Current answer is complete → move to the next answer
+    if (animationIndex + 1 < answers.length) {
+      const timer = setTimeout(() => {
+        setAnimationIndex(prev => prev + 1)
+        setAnimationTextIndex(0)
+      }, 500)
+
+      return () => clearTimeout(timer)
+    }
+  }, [animationStage, animationIndex, animationTextIndex, answers])
+
+
+  const getAnimationParts = () => {
+    if (animationStage === 'typing') {
+      return displayText
+    }
+
+    const parts: Array<{
+      text: string
+      color?: string
+      blank?: boolean
+      answerIndex?: number
+    }> = []
+
+    let answerIndex = 0
+
+    maskedArticle.forEach((item) => {
+      if (!item.color) {
+        parts.push({ text: item.text })
+        return
+      }
+
+      const answer = answers[answerIndex]
+
+      // Answer already completed
+      if (answerIndex < animationIndex) {
+        parts.push({
+          text: answer.answer,
+          color: answer.color,
+          blank: true,
+          answerIndex,
+        })
+      }
+
+      // Current answer: type directly into the colored area
+      else if (answerIndex === animationIndex) {
+        parts.push({
+          text: answer.answer.substring(0, animationTextIndex),
+          color: answer.color,
+          blank: true,
+          answerIndex,
+        })
+      }
+
+      // Answer hasn't started yet → keep the original blank
+      else {
+        parts.push({
+          text: '_____',
+          color: answer.color,
+          blank: true,
+          answerIndex,
+        })
+      }
+
+      answerIndex++
+    })
+
+    return parts
+  }
+
+
+  const animationParts = getAnimationParts()
 
   return (
     <Paper
@@ -198,6 +328,7 @@ function AnimatedNewspaper() {
       >
         {t.attentionHeader}
       </Typography>
+
       <Box
         sx={{
           fontFamily: 'Newsreader, serif',
@@ -205,18 +336,21 @@ function AnimatedNewspaper() {
           lineHeight: '1.8',
           color: '#000',
           fontStyle: 'italic',
+          fontWeight: 700,
           minHeight: '100px',
         }}
       >
-        {displayText.map((item, idx) => {
-          if (typeof item === 'string') {
-            return <span key={idx}>{item}</span>
+        {animationParts.map((item, idx) => {
+          if (!item.color) {
+            return <span key={idx}>{item.text}</span>
           }
+
           return (
             <span
               key={idx}
               style={{
                 backgroundColor: item.color,
+                color: '#fff',
                 padding: '2px 4px',
                 borderRadius: '2px',
                 fontWeight: '600',
@@ -226,8 +360,12 @@ function AnimatedNewspaper() {
             </span>
           )
         })}
-        {isTyping && <span style={{ animation: 'blink 0.7s infinite' }}>|</span>}
+
+        {isTyping && (
+          <span style={{ animation: 'blink 0.7s infinite' }}>|</span>
+        )}
       </Box>
+
       <style>
         {`
           @keyframes blink {
@@ -239,6 +377,7 @@ function AnimatedNewspaper() {
     </Paper>
   )
 }
+
 
 function StatsSection() {
   const { data: sessions, isLoading } = useUserStats()
