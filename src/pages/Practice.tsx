@@ -148,7 +148,7 @@ const practiceTranslations = {
 // The numbers are the same mask codes used by Game.tsx.
 const PRACTICE_TEXT_BY_LANG = {
   en:
-    'How to play?\n\nIn 5555, you will see a short text from a real newspaper article with several words removed. Your task is to guess the missing words. Let’s start to try it now! Each blank represents a different word type, indicated by its color. Click a colored blank or a word type below to select your target. Then type your guess in the “Enter your guess…” bar below. If your guess is incorrect, it will appear at the end of the text, and you can keep guessing until you find the exact answer. Each correct answer earns you 4444 points. You can switch between blanks at any time. You have 3 minutes for each 3333 article. If you want 2222 move on, click “I give up.” When the time is up, all answers will be revealed in their 1111 blanks so you can review them. When you are ready, click NEXT to 6666 your first newspaper article.\n\nEnjoy the game!',
+    'How to play?\n\nIn 5555, you will see a short text from a real newspaper article with several words removed. Your task is to guess the missing words. Let’s start to try it now! Each blank represents a different word type, indicated by its color. Click a coloured blank or a word type below to select your target. Then type your guess in the “Enter your guess…” bar below. If your guess is incorrect, it will appear at the end of the text, and you can keep guessing until you find the exact answer. Each correct answer earns you 4444 points. You can switch between blanks at any time. You have 3 minutes for each 3333 article. If you want 2222 move on, click “I give up.” When the time is up, all answers will be revealed in their 1111 blanks so you can review them. When you are ready, click NEXT to 6666 your first newspaper article.\n\nEnjoy the game!',
 
   fr:
     'Comment jouer?\n\nDans 5555, vous allez découvrir un court article d’un véritable article de journal dont plusieurs mots ont été supprimés. Votre tâche consiste à deviner les mots manquants. Commençons dès maintenant ! Chaque case vide représente un type de mot différent, indiqué par sa couleur. Cliquez sur une case colorée ou sur un type de mot ci-dessous pour sélectionner votre cible. Tapez ensuite votre réponse dans la barre « Entrez votre réponse… ». Si votre réponse est incorrecte, elle apparaîtra à la fin du texte et vous pourrez continuer à essayer jusqu’à trouver la bonne réponse. Chaque bonne réponse vous rapporte 4444 points. Vous pouvez changer de case à tout moment. Vous disposez de 3 minutes pour chaque 3333 article. Si vous souhaitez 2222 passer à l’article suivant, cliquez sur « J’abandonne ». Lorsque le temps est écoulé, toutes les réponses seront révélées dans leurs cases 1111 afin que vous puissiez les revoir. Lorsque vous êtes prêt, cliquez sur SUIVANT pour 6666 votre premier article de journal.\n\nBon jeu !',
@@ -161,7 +161,7 @@ const PRACTICE_ANSWERS_BY_LANG: Record<
   Record<string, string>
 > = {
   en: {
-    '1111': 'colored',
+    '1111': 'coloured',
     '2222': 'to',
     '3333': 'newspaper',
     '4444': '100',
